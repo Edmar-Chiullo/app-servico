@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation"
 import { Card, Button, Badge, Loading, Input, Select, Modal } from "@/components/ui"
 import { STATUS_OS, STATUS_OS_COLORS, ALLOWED_STATUS_TRANSITIONS } from "@/lib/utils/constants"
 import { formatDate, formatDateTime, formatCurrency } from "@/lib/utils/format"
+import { FileDown } from "lucide-react"
 import { toast } from "react-toastify"
 
 type ProductItem = { productId: string; description: string; quantity: number; unitPrice: number }
@@ -127,9 +128,19 @@ export default function OSDetailPage() {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-2">
         <h1 className="text-2xl font-bold break-words">OS #{os.number}</h1>
-        <Badge className={`${STATUS_OS_COLORS[os.status]} shrink-0`}>
-          {STATUS_OS[os.status as keyof typeof STATUS_OS] || os.status}
-        </Badge>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={() => window.open(`/api/ordens-servico/${id}/pdf`, "_blank")}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
+            title="Exportar PDF"
+          >
+            <FileDown size={16} />
+            <span className="hidden sm:inline">PDF</span>
+          </button>
+          <Badge className={`${STATUS_OS_COLORS[os.status]} shrink-0`}>
+            {STATUS_OS[os.status as keyof typeof STATUS_OS] || os.status}
+          </Badge>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

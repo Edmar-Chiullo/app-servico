@@ -1,7 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useSession } from "next-auth/react"
+import { useRouter } from "next/navigation"
 import { Sidebar } from "./Sidebar"
 import { Header } from "./Header"
 import { Loading } from "../ui"
@@ -9,7 +10,14 @@ import type { UserRole } from "@/lib/enums"
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession()
+  const router = useRouter()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/login")
+    }
+  }, [status, router])
 
   if (status === "loading") {
     return <Loading text="Carregando..." />

@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "reset:db": "npx prisma migrate reset --force && npx prisma db seed"
   },
   "prisma": {
     "seed": "node --import tsx prisma/seed.ts"
