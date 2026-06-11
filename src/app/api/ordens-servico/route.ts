@@ -11,6 +11,7 @@ export async function GET(req: NextRequest) {
   const search = searchParams.get("search") || undefined
   const status = searchParams.get("status") || undefined
   const customerId = searchParams.get("customerId") || undefined
+  const vehicleId = searchParams.get("vehicleId") || undefined
   const technicianId = searchParams.get("technicianId") || undefined
   const page = Number(searchParams.get("page") || "1")
 
@@ -18,6 +19,7 @@ export async function GET(req: NextRequest) {
     search,
     status: status as any,
     customerId,
+    vehicleId,
     technicianId,
     page,
   })

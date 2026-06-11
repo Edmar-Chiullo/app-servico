@@ -30,8 +30,8 @@ export async function listProdutos(params: {
   if (lowStock) where.stockQuantity = { lte: prisma.product.fields.stockMin }
   if (search) {
     where.OR = [
-      { code: { contains: search } },
-      { description: { contains: search } },
+      { code: { contains: search, mode: "insensitive" } },
+      { description: { contains: search, mode: "insensitive" } },
     ]
   }
 
@@ -49,6 +49,8 @@ export async function listProdutos(params: {
 }
 
 export async function createProduto(data: ProdutoInput, userId: string) {
+  if (data.description) data.description = data.description.toUpperCase()
+  if (data.category) data.category = data.category.toUpperCase()
   const produto = await prisma.product.create({ data })
 
   await createAuditLog({
@@ -67,6 +69,8 @@ export async function getProduto(id: string) {
 }
 
 export async function updateProduto(id: string, data: Partial<ProdutoInput & { active: boolean }>, userId: string) {
+  if (data.description) data.description = data.description.toUpperCase()
+  if (data.category) data.category = data.category.toUpperCase()
   const oldData = await prisma.product.findUnique({ where: { id } })
   const produto = await prisma.product.update({ where: { id }, data })
 
@@ -79,6 +83,16 @@ export async function updateProduto(id: string, data: Partial<ProdutoInput & { a
   })
 
   return produto
+}
+
+export async function listLowStockProducts() {
+  return prisma.product.findMany({
+    where: {
+      active: true,
+      stockQuantity: { lte: prisma.product.fields.stockMin },
+    },
+    orderBy: { description: "asc" },
+  })
 }
 
 export async function getProdutosSelect() {

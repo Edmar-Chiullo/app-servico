@@ -1,4 +1,5 @@
 import { Document, Page, View, Text, StyleSheet } from "@react-pdf/renderer"
+import { toTitleCase } from "@/lib/utils/format"
 
 const styles = StyleSheet.create({
   page: {
@@ -252,7 +253,7 @@ export function OSPDFDocument({ os, company }: Props) {
 
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Cliente</Text>
-              <View style={styles.row}><Text style={styles.label}>Nome:</Text><Text style={styles.value}>{os.customer.name}</Text></View>
+              <View style={styles.row}><Text style={styles.label}>Nome:</Text><Text style={styles.value}>{toTitleCase(os.customer.name)}</Text></View>
               {os.customer.cpf && <View style={styles.row}><Text style={styles.label}>CPF:</Text><Text style={styles.value}>{os.customer.cpf}</Text></View>}
               {os.customer.phone && <View style={styles.row}><Text style={styles.label}>Telefone:</Text><Text style={styles.value}>{os.customer.phone}</Text></View>}
               {os.customer.email && <View style={styles.row}><Text style={styles.label}>Email:</Text><Text style={styles.value}>{os.customer.email}</Text></View>}
@@ -260,17 +261,17 @@ export function OSPDFDocument({ os, company }: Props) {
 
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Veículo</Text>
-              <View style={styles.row}><Text style={styles.label}>Modelo:</Text><Text style={styles.value}>{os.vehicle.model} - {os.vehicle.plate}</Text></View>
-              {os.vehicle.brand && <View style={styles.row}><Text style={styles.label}>Marca:</Text><Text style={styles.value}>{os.vehicle.brand}</Text></View>}
+              <View style={styles.row}><Text style={styles.label}>Modelo:</Text><Text style={styles.value}>{toTitleCase(os.vehicle.model)} - {os.vehicle.plate}</Text></View>
+              {os.vehicle.brand && <View style={styles.row}><Text style={styles.label}>Marca:</Text><Text style={styles.value}>{toTitleCase(os.vehicle.brand)}</Text></View>}
               {os.vehicle.year && <View style={styles.row}><Text style={styles.label}>Ano:</Text><Text style={styles.value}>{os.vehicle.year}</Text></View>}
-              {os.vehicle.color && <View style={styles.row}><Text style={styles.label}>Cor:</Text><Text style={styles.value}>{os.vehicle.color}</Text></View>}
+              {os.vehicle.color && <View style={styles.row}><Text style={styles.label}>Cor:</Text><Text style={styles.value}>{toTitleCase(os.vehicle.color)}</Text></View>}
             </View>
           </View>
 
           <View style={styles.gridHalf}>
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Técnico Responsável</Text>
-              <View style={styles.row}><Text style={styles.label}>Nome:</Text><Text style={styles.value}>{os.technician.name}</Text></View>
+              <View style={styles.row}><Text style={styles.label}>Nome:</Text><Text style={styles.value}>{toTitleCase(os.technician.name)}</Text></View>
             </View>
           </View>
         </View>

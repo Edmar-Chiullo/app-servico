@@ -2,9 +2,22 @@
 
 import { useEffect, useState } from "react"
 import { useRouter, useParams } from "next/navigation"
-import { Card, Loading } from "@/components/ui"
+import { Card, Table, Badge, Loading, FormattedText } from "@/components/ui"
 import { VeiculoForm } from "../components/VeiculoForm"
+import { STATUS_OS, STATUS_OS_COLORS } from "@/lib/utils/constants"
+import { formatDate, formatCurrency } from "@/lib/utils/format"
 import { toast } from "react-toastify"
+
+type OS = {
+  id: string
+  number: number
+  status: string
+  openingDate: string
+  totalValue: number
+  problemDescription: string
+  customer: { name: string }
+  vehicle: { plate: string; model: string; brand: string | null }
+}
 
 export default function EditarVeiculoPage() {
   const router = useRouter()
@@ -14,6 +27,7 @@ export default function EditarVeiculoPage() {
   const [veiculo, setVeiculo] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [ordens, setOrdens] = useState<OS[]>([])
 
   useEffect(() => {
     async function load() {
@@ -31,6 +45,18 @@ export default function EditarVeiculoPage() {
     }
     load()
   }, [id, router])
+
+  useEffect(() => {
+    async function loadOrdens() {
+      try {
+        const res = await fetch(`/api/ordens-servico?vehicleId=${id}&pageSize=100`)
+        if (!res.ok) return
+        const json = await res.json()
+        setOrdens(json.data || [])
+      } catch { }
+    }
+    loadOrdens()
+  }, [id])
 
   async function handleSave(data: any) {
     setSaving(true)
@@ -70,6 +96,30 @@ export default function EditarVeiculoPage() {
           }}
           onSave={handleSave}
           loading={saving}
+        />
+      </Card>
+
+      <Card title="Histórico de Ordens de Serviço">
+        <Table
+          columns={[
+            { key: "number", header: "Nº", render: (o: OS) => `#${o.number}` },
+            { key: "openingDate", header: "Data", render: (o: OS) => formatDate(o.openingDate) },
+            { key: "customer", header: "Cliente", render: (o: OS) => <FormattedText>{o.customer.name}</FormattedText> },
+            { key: "problemDescription", header: "Problema", render: (o: OS) => o.problemDescription || "-" },
+            {
+              key: "status",
+              header: "Status",
+              render: (o: OS) => (
+                <Badge className={STATUS_OS_COLORS[o.status]}>
+                  {STATUS_OS[o.status as keyof typeof STATUS_OS] || o.status}
+                </Badge>
+              ),
+            },
+            { key: "totalValue", header: "Valor", render: (o: OS) => formatCurrency(o.totalValue) },
+          ]}
+          data={ordens}
+          onRowClick={(o: OS) => router.push(`/ordens-servico/${o.id}`)}
+          emptyMessage="Nenhuma ordem de serviço encontrada para este veículo"
         />
       </Card>
     </div>

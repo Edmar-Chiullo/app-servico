@@ -30,7 +30,21 @@ export default function ConfiguracoesPage() {
     fetch("/api/configuracoes")
       .then((r) => r.json())
       .then((data) => {
-        if (data) setForm(data)
+        if (data) {
+          setForm({
+            name: data.name || "",
+            logo: data.logo || "",
+            cnpj: data.cnpj || "",
+            phone: data.phone || "",
+            email: data.email || "",
+            street: data.street || "",
+            number: data.number || "",
+            neighborhood: data.neighborhood || "",
+            city: data.city || "",
+            state: data.state || "",
+            zipCode: data.zipCode || "",
+          })
+        }
       })
       .catch(() => {})
       .finally(() => setLoading(false))

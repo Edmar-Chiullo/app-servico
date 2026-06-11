@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import { Card, Table, Pagination, Input, Button } from "@/components/ui"
+import { Card, Table, Pagination, Input, Button, FormattedText } from "@/components/ui"
 import { toast } from "react-toastify"
 
 type Veiculo = {
@@ -60,11 +60,11 @@ export default function VeiculosPage() {
         <Table
           columns={[
             { key: "plate", header: "Placa" },
-            { key: "model", header: "Modelo" },
-            { key: "brand", header: "Marca", render: (v: Veiculo) => v.brand || "-" },
-            { key: "color", header: "Cor" },
+            { key: "model", header: "Modelo", render: (v: Veiculo) => <FormattedText>{v.model}</FormattedText> },
+            { key: "brand", header: "Marca", render: (v: Veiculo) => v.brand ? <FormattedText>{v.brand}</FormattedText> : "-" },
+            { key: "color", header: "Cor", render: (v: Veiculo) => <FormattedText>{v.color}</FormattedText> },
             { key: "year", header: "Ano", render: (v: Veiculo) => v.year || "-" },
-            { key: "customer", header: "Cliente", render: (v: Veiculo) => v.customer.name },
+            { key: "customer", header: "Cliente", render: (v: Veiculo) => <FormattedText>{v.customer.name}</FormattedText> },
           ]}
           data={data}
           onRowClick={(v) => router.push(`/veiculos/${v.id}`)}

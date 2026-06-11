@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import { Card, Table, Pagination, Input, Button, Badge } from "@/components/ui"
+import { Card, Table, Pagination, Input, Button, Badge, FormattedText } from "@/components/ui"
 import { formatCurrency } from "@/lib/utils/format"
 import { toast } from "react-toastify"
 
@@ -26,6 +26,7 @@ export default function ProdutosPage() {
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [search, setSearch] = useState("")
+  const [lowStock, setLowStock] = useState(false)
   const [loading, setLoading] = useState(true)
 
   const loadData = useCallback(async () => {
@@ -33,6 +34,7 @@ export default function ProdutosPage() {
     try {
       const params = new URLSearchParams({ page: String(page) })
       if (search) params.set("search", search)
+      if (lowStock) params.set("lowStock", "true")
       const res = await fetch(`/api/produtos?${params}`)
       if (!res.ok) throw new Error("Erro ao carregar")
       const json = await res.json()
@@ -43,7 +45,7 @@ export default function ProdutosPage() {
     } finally {
       setLoading(false)
     }
-  }, [page, search])
+  }, [page, search, lowStock])
 
   useEffect(() => { loadData() }, [loadData])
 
@@ -60,18 +62,49 @@ export default function ProdutosPage() {
       </div>
 
       <Card>
-        <div className="mb-4">
-          <Input
-            placeholder="Buscar por código ou descrição..."
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1) }}
-          />
+        <div className="flex flex-col sm:flex-row gap-3 mb-4">
+          <div className="flex-1">
+            <Input
+              placeholder="Buscar por código ou descrição..."
+              value={search}
+              onChange={(e) => { setSearch(e.target.value); setPage(1) }}
+            />
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <label className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={lowStock}
+                onChange={(e) => { setLowStock(e.target.checked); setPage(1) }}
+                className="rounded border-gray-300"
+              />
+              Estoque baixo
+            </label>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2 mb-4">
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => window.open("/api/produtos/export/xlsx")}
+            disabled={data.length === 0}
+          >
+            Exportar XLSX
+          </Button>
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => window.open("/api/produtos/export/pdf")}
+            disabled={data.length === 0}
+          >
+            Exportar PDF
+          </Button>
         </div>
         <Table
           columns={[
             { key: "code", header: "Código" },
-            { key: "description", header: "Descrição" },
-            { key: "category", header: "Categoria", render: (p: Produto) => p.category || "-" },
+            { key: "description", header: "Descrição", render: (p: Produto) => <FormattedText>{p.description}</FormattedText> },
+            { key: "category", header: "Categoria", render: (p: Produto) => p.category ? <FormattedText>{p.category}</FormattedText> : "-" },
             { key: "stockQuantity", header: "Estoque",
               render: (p: Produto) => (
                 <span className={p.stockQuantity <= p.stockMin ? "text-red-600 font-bold" : ""}>

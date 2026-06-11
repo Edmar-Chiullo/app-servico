@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import { Card, Table, Pagination, Input, Button, Badge } from "@/components/ui"
+import { Card, Table, Pagination, Input, Button, Badge, FormattedText } from "@/components/ui"
 import { toast } from "react-toastify"
 
 type Tecnico = {
@@ -58,9 +58,9 @@ export default function TecnicosPage() {
         </div>
         <Table
           columns={[
-            { key: "name", header: "Nome" },
+            { key: "name", header: "Nome", render: (t: Tecnico) => <FormattedText>{t.name}</FormattedText> },
             { key: "cpf", header: "CPF" },
-            { key: "role", header: "Cargo" },
+            { key: "role", header: "Cargo", render: (t: Tecnico) => <FormattedText>{t.role}</FormattedText> },
             { key: "phone", header: "Telefone", render: (t: Tecnico) => t.phone || "-" },
             {
               key: "active",

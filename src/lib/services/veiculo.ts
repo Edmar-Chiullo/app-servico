@@ -27,9 +27,9 @@ export async function listVeiculos(params: {
 
   if (search) {
     where.OR = [
-      { plate: { contains: search } },
-      { model: { contains: search } },
-      { color: { contains: search } },
+      { plate: { contains: search, mode: "insensitive" } },
+      { model: { contains: search, mode: "insensitive" } },
+      { color: { contains: search, mode: "insensitive" } },
     ]
   }
 
@@ -55,6 +55,9 @@ export async function getVeiculoById(id: string) {
 }
 
 export async function createVeiculo(data: VeiculoInput, userId: string) {
+  if (data.model) data.model = data.model.toUpperCase()
+  if (data.brand) data.brand = data.brand.toUpperCase()
+  if (data.color) data.color = data.color.toUpperCase()
   const veiculo = await prisma.vehicle.create({ data })
 
   await createAuditLog({
@@ -69,6 +72,9 @@ export async function createVeiculo(data: VeiculoInput, userId: string) {
 }
 
 export async function updateVeiculo(id: string, data: Partial<VeiculoInput>, userId: string) {
+  if (data.model) data.model = data.model.toUpperCase()
+  if (data.brand) data.brand = data.brand.toUpperCase()
+  if (data.color) data.color = data.color.toUpperCase()
   const oldData = await prisma.vehicle.findUnique({ where: { id } })
   const veiculo = await prisma.vehicle.update({ where: { id }, data })
 

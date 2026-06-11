@@ -35,8 +35,8 @@ export async function listClientes(params: {
 
   if (search) {
     where.OR = [
-      { name: { contains: search } },
-      { cpf: { contains: search } },
+      { name: { contains: search, mode: "insensitive" } },
+      { cpf: { contains: search, mode: "insensitive" } },
     ]
   }
 
@@ -62,6 +62,7 @@ export async function getClienteById(id: string) {
 }
 
 export async function createCliente(data: ClienteCreateInput, userId: string) {
+  data.name = data.name.toUpperCase()
   const cliente = await prisma.customer.create({ data })
 
   await createAuditLog({
@@ -76,6 +77,7 @@ export async function createCliente(data: ClienteCreateInput, userId: string) {
 }
 
 export async function updateCliente(id: string, data: ClienteUpdateInput, userId: string) {
+  if (data.name) data.name = data.name.toUpperCase()
   const oldData = await prisma.customer.findUnique({ where: { id } })
   const cliente = await prisma.customer.update({ where: { id }, data })
 

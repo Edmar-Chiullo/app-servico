@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter, useParams } from "next/navigation"
-import { Card, Button, Badge, Loading, Input, Select, Modal } from "@/components/ui"
+import { Card, Button, Badge, Loading, Input, Select, Modal, FormattedText } from "@/components/ui"
 import { STATUS_OS, STATUS_OS_COLORS, ALLOWED_STATUS_TRANSITIONS } from "@/lib/utils/constants"
 import { formatDate, formatDateTime, formatCurrency } from "@/lib/utils/format"
 import { FileDown } from "lucide-react"
@@ -146,10 +146,10 @@ export default function OSDetailPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card title="Informações">
           <dl className="space-y-3 text-sm">
-            <div className="flex justify-between"><dt className="text-gray-500">Cliente:</dt><dd>{os.customer.name}</dd></div>
+            <div className="flex justify-between"><dt className="text-gray-500">Cliente:</dt><dd><FormattedText>{os.customer.name}</FormattedText></dd></div>
             <div className="flex justify-between"><dt className="text-gray-500">CPF:</dt><dd>{os.customer.cpf}</dd></div>
-            <div className="flex justify-between"><dt className="text-gray-500">Veículo:</dt><dd>{os.vehicle.brand || ""} {os.vehicle.model} - {os.vehicle.plate}</dd></div>
-            <div className="flex justify-between"><dt className="text-gray-500">Técnico:</dt><dd>{os.technician.name}</dd></div>
+            <div className="flex justify-between"><dt className="text-gray-500">Veículo:</dt><dd><FormattedText>{os.vehicle.brand}</FormattedText> <FormattedText>{os.vehicle.model}</FormattedText> - {os.vehicle.plate}</dd></div>
+            <div className="flex justify-between"><dt className="text-gray-500">Técnico:</dt><dd><FormattedText>{os.technician.name}</FormattedText></dd></div>
             <div className="flex justify-between"><dt className="text-gray-500">Abertura:</dt><dd>{formatDateTime(os.openingDate)}</dd></div>
             {os.completionDate && <div className="flex justify-between"><dt className="text-gray-500">Conclusão:</dt><dd>{formatDateTime(os.completionDate)}</dd></div>}
             <div className="flex justify-between"><dt className="text-gray-500">Prioridade:</dt><dd className="capitalize">{os.priority}</dd></div>

@@ -24,8 +24,8 @@ export async function listTecnicos(params: {
 
   if (search) {
     where.OR = [
-      { name: { contains: search } },
-      { cpf: { contains: search } },
+      { name: { contains: search, mode: "insensitive" } },
+      { cpf: { contains: search, mode: "insensitive" } },
     ]
   }
 
@@ -43,6 +43,7 @@ export async function listTecnicos(params: {
 }
 
 export async function createTecnico(data: TecnicoInput, userId: string) {
+  data.name = data.name.toUpperCase()
   const tecnico = await prisma.technician.create({
     data: { ...data, createdByUserId: userId },
   })
@@ -63,6 +64,7 @@ export async function getTecnico(id: string) {
 }
 
 export async function updateTecnico(id: string, data: Partial<TecnicoInput & { active: boolean }>, userId: string) {
+  if (data.name) data.name = data.name.toUpperCase()
   const oldData = await prisma.technician.findUnique({ where: { id } })
   const tecnico = await prisma.technician.update({ where: { id }, data })
 

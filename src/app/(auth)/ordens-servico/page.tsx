@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import { Card, Table, Pagination, Input, Button, Badge } from "@/components/ui"
+import { Card, Table, Pagination, Input, Button, Badge, FormattedText } from "@/components/ui"
 import { STATUS_OS, STATUS_OS_COLORS } from "@/lib/utils/constants"
 import { formatDate, formatCurrency } from "@/lib/utils/format"
 import { toast } from "react-toastify"
@@ -85,9 +85,9 @@ export default function OrdensServicoPage() {
         <Table
           columns={[
             { key: "number", header: "Nº", render: (o: OS) => `#${o.number}` },
-            { key: "customer", header: "Cliente", render: (o: OS) => o.customer.name },
-            { key: "vehicle", header: "Veículo", render: (o: OS) => `${o.vehicle.model} - ${o.vehicle.plate}` },
-            { key: "technician", header: "Técnico", render: (o: OS) => o.technician.name },
+            { key: "customer", header: "Cliente", render: (o: OS) => <FormattedText>{o.customer.name}</FormattedText> },
+            { key: "vehicle", header: "Veículo", render: (o: OS) => <><FormattedText>{o.vehicle.model}</FormattedText> - {o.vehicle.plate}</> },
+            { key: "technician", header: "Técnico", render: (o: OS) => <FormattedText>{o.technician.name}</FormattedText> },
             {
               key: "status",
               header: "Status",

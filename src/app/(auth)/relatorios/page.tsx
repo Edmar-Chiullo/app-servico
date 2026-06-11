@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Card, Button, Input, Select } from "@/components/ui"
+import { Card, Button, Input, Select, FormattedText } from "@/components/ui"
 import { toast } from "react-toastify"
 import {
   Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend,
@@ -96,10 +96,14 @@ export default function RelatoriosGerenciaisPage() {
 
             <Card title="Últimas Ordens">
               <div className="overflow-y-auto max-h-64 space-y-2">
+                <div className="flex justify-between text-xs font-semibold text-gray-500 uppercase border-b pb-1 mb-1">
+                  <span>Cliente</span>
+                  <span>Técnico</span>
+                </div>
                 {data.ordens.slice(0, 10).map((o: any) => (
                   <div key={o.id} className="flex justify-between text-sm border-b pb-1">
-                    <span>#{o.number} - {o.customer.name}</span>
-                    <span className="text-gray-500">{o.technician.name}</span>
+                    <span>#{o.number} - <FormattedText>{o.customer.name}</FormattedText></span>
+                    <span className="text-gray-500"><FormattedText>{o.technician.name}</FormattedText></span>
                   </div>
                 ))}
               </div>

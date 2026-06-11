@@ -45,10 +45,10 @@ export async function listOrdens(params: {
 
   if (search) {
     where.OR = [
-      { customer: { name: { contains: search } } },
-      { customer: { cpf: { contains: search } } },
-      { vehicle: { plate: { contains: search } } },
-      { vehicle: { model: { contains: search } } },
+      { customer: { name: { contains: search, mode: "insensitive" } } },
+      { customer: { cpf: { contains: search, mode: "insensitive" } } },
+      { vehicle: { plate: { contains: search, mode: "insensitive" } } },
+      { vehicle: { model: { contains: search, mode: "insensitive" } } },
     ]
   }
 

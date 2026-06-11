@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getCurrentUser } from "@/lib/permissions"
 import { getRelatorioData } from "@/lib/services/relatorio"
+import { toTitleCase } from "@/lib/utils/format"
 import * as XLSX from "xlsx"
 
 export async function GET(req: NextRequest) {
@@ -20,10 +21,10 @@ export async function GET(req: NextRequest) {
 
   const rows = data.ordens.map((o) => ({
     "Nº OS": o.number,
-    "Cliente": o.customer.name,
+    "Cliente": toTitleCase(o.customer.name),
     "CPF": o.customer.cpf,
-    "Veículo": `${o.vehicle.brand || ""} ${o.vehicle.model} - ${o.vehicle.plate}`,
-    "Técnico": o.technician.name,
+    "Veículo": `${toTitleCase(o.vehicle.brand || "")} ${toTitleCase(o.vehicle.model)} - ${o.vehicle.plate}`,
+    "Técnico": toTitleCase(o.technician.name),
     "Status": o.status,
     "Abertura": o.openingDate.toLocaleDateString("pt-BR"),
     "Conclusão": o.completionDate?.toLocaleDateString("pt-BR") || "-",

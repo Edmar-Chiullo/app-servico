@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react"
 import { useRouter, useParams } from "next/navigation"
-import { Card, Button, Table, Loading } from "@/components/ui"
+import { Card, Button, Table, Badge, Loading, FormattedText } from "@/components/ui"
 import { ClienteForm } from "../components/ClienteForm"
+import { STATUS_OS, STATUS_OS_COLORS } from "@/lib/utils/constants"
+import { formatDate, formatCurrency } from "@/lib/utils/format"
 import { toast } from "react-toastify"
 
 export default function EditarClientePage() {
@@ -15,6 +17,7 @@ export default function EditarClientePage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [showVehicles, setShowVehicles] = useState(false)
+  const [ordens, setOrdens] = useState<any[]>([])
 
   useEffect(() => {
     async function load() {
@@ -32,6 +35,18 @@ export default function EditarClientePage() {
     }
     load()
   }, [id, router])
+
+  useEffect(() => {
+    async function loadOrdens() {
+      try {
+        const res = await fetch(`/api/ordens-servico?customerId=${id}&pageSize=100`)
+        if (!res.ok) return
+        const json = await res.json()
+        setOrdens(json.data || [])
+      } catch { }
+    }
+    loadOrdens()
+  }, [id])
 
   async function handleSave(data: any) {
     setSaving(true)
@@ -102,6 +117,29 @@ export default function EditarClientePage() {
         />
       </Card>
 
+      <Card title="Histórico de Ordens de Serviço">
+        <Table
+          columns={[
+            { key: "number", header: "Nº", render: (o: any) => `#${o.number}` },
+            { key: "vehicle", header: "Veículo", render: (o: any) => <><FormattedText>{o.vehicle.model}</FormattedText> - {o.vehicle.plate}</> },
+            { key: "openingDate", header: "Data", render: (o: any) => formatDate(o.openingDate) },
+            {
+              key: "status",
+              header: "Status",
+              render: (o: any) => (
+                <Badge className={STATUS_OS_COLORS[o.status]}>
+                  {STATUS_OS[o.status as keyof typeof STATUS_OS] || o.status}
+                </Badge>
+              ),
+            },
+            { key: "totalValue", header: "Valor", render: (o: any) => formatCurrency(o.totalValue) },
+          ]}
+          data={ordens}
+          onRowClick={(o: any) => router.push(`/ordens-servico/${o.id}`)}
+          emptyMessage="Nenhuma ordem de serviço encontrada para este cliente"
+        />
+      </Card>
+
       <Card title="Veículos" action={
         <Button size="sm" onClick={() => router.push(`/veiculos/novo?customerId=${id}`)}>
           Novo Veículo
@@ -110,9 +148,9 @@ export default function EditarClientePage() {
         <Table
           columns={[
             { key: "plate", header: "Placa" },
-            { key: "model", header: "Modelo" },
-            { key: "brand", header: "Marca" },
-            { key: "color", header: "Cor" },
+            { key: "model", header: "Modelo", render: (v: any) => <FormattedText>{v.model}</FormattedText> },
+            { key: "brand", header: "Marca", render: (v: any) => v.brand ? <FormattedText>{v.brand}</FormattedText> : "-" },
+            { key: "color", header: "Cor", render: (v: any) => <FormattedText>{v.color}</FormattedText> },
             { key: "year", header: "Ano" },
           ]}
           data={cliente.vehicles || []}
