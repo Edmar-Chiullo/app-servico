@@ -11,6 +11,7 @@ export type DashboardData = {
   servicesToday: number
   servicesOpen: number
   servicesInProgress: number
+  servicesWaitingParts: number
   servicesCompleted: number
   servicesCancelled: number
   dailyRevenue: number

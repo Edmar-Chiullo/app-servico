@@ -62,6 +62,10 @@ export async function createProduto(data: ProdutoInput, userId: string) {
   return produto
 }
 
+export async function getProduto(id: string) {
+  return prisma.product.findUnique({ where: { id } })
+}
+
 export async function updateProduto(id: string, data: Partial<ProdutoInput & { active: boolean }>, userId: string) {
   const oldData = await prisma.product.findUnique({ where: { id } })
   const produto = await prisma.product.update({ where: { id }, data })

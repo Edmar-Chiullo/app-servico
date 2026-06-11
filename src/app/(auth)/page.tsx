@@ -49,7 +49,7 @@ export default function DashboardPage() {
     labels: ["Abertos", "Em Andamento", "Aguardando Peças", "Concluídos", "Cancelados"],
     datasets: [{
       label: "Serviços",
-      data: [data.servicesOpen, data.servicesInProgress, 0, data.servicesCompleted, data.servicesCancelled],
+      data: [data.servicesOpen, data.servicesInProgress, data.servicesWaitingParts, data.servicesCompleted, data.servicesCancelled],
       backgroundColor: ["#3B82F6", "#F59E0B", "#F97316", "#10B981", "#EF4444"],
     }],
   }

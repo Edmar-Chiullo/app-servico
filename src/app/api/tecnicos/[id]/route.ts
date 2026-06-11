@@ -1,9 +1,20 @@
 import { NextRequest, NextResponse } from "next/server"
 import { Prisma } from "@prisma/client"
 import { getCurrentUser, requireRole } from "@/lib/permissions"
-import { updateTecnico } from "@/lib/services/tecnico"
+import { getTecnico, updateTecnico } from "@/lib/services/tecnico"
 import { tecnicoSchema } from "@/lib/validations/tecnico"
 import { UserRole } from "@/lib/enums"
+
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const user = await getCurrentUser()
+  if (!user) return NextResponse.json({ error: "Não autenticado" }, { status: 401 })
+
+  const { id } = await params
+  const tecnico = await getTecnico(id)
+  if (!tecnico) return NextResponse.json({ error: "Técnico não encontrado" }, { status: 404 })
+
+  return NextResponse.json(tecnico)
+}
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await getCurrentUser()

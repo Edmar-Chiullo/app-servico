@@ -58,6 +58,10 @@ export async function createTecnico(data: TecnicoInput, userId: string) {
   return tecnico
 }
 
+export async function getTecnico(id: string) {
+  return prisma.technician.findUnique({ where: { id } })
+}
+
 export async function updateTecnico(id: string, data: Partial<TecnicoInput & { active: boolean }>, userId: string) {
   const oldData = await prisma.technician.findUnique({ where: { id } })
   const tecnico = await prisma.technician.update({ where: { id }, data })

@@ -13,6 +13,7 @@ export async function getDashboardData() {
     servicesToday,
     servicesOpen,
     servicesInProgress,
+    servicesWaitingParts,
     servicesCompleted,
     servicesCancelled,
     dailyRevenue,
@@ -30,6 +31,9 @@ export async function getDashboardData() {
     }),
     prisma.serviceOrder.count({
       where: { status: "IN_PROGRESS" },
+    }),
+    prisma.serviceOrder.count({
+      where: { status: "WAITING_PARTS" },
     }),
     prisma.serviceOrder.count({
       where: { status: "COMPLETED" },
@@ -94,6 +98,7 @@ export async function getDashboardData() {
     servicesToday,
     servicesOpen,
     servicesInProgress,
+    servicesWaitingParts,
     servicesCompleted,
     servicesCancelled,
     dailyRevenue: Number(dailyRevenue._sum.value ?? 0),
