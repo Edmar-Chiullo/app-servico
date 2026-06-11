@@ -43,6 +43,7 @@ const menuItems = [
   { href: "/ordens-servico", label: "Ordens de Serviço", icon: "ClipboardList", roles: ["ADMIN", "MANAGER", "ATTENDANT", "TECHNICIAN"] },
   { href: "/financeiro", label: "Financeiro", icon: "DollarSign", roles: ["ADMIN", "MANAGER"] },
   { href: "/relatorios", label: "Relatórios", icon: "BarChart3", roles: ["ADMIN", "MANAGER"] },
+  { href: "/usuarios", label: "Usuários", icon: "Users", roles: ["ADMIN"] },
   { href: "/configuracoes", label: "Configurações", icon: "Settings", roles: ["ADMIN"] },
 ]
 
