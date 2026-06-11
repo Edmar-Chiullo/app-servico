@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { Prisma } from "@prisma/client"
 import { getCurrentUser, requireRole } from "@/lib/permissions"
 import { updateTecnico } from "@/lib/services/tecnico"
 import { tecnicoSchema } from "@/lib/validations/tecnico"
@@ -21,6 +22,13 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
   }
 
-  const tecnico = await updateTecnico(id, parsed.data, user.id)
-  return NextResponse.json(tecnico)
+  try {
+    const tecnico = await updateTecnico(id, parsed.data, user.id)
+    return NextResponse.json(tecnico)
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+      return NextResponse.json({ error: "CPF já cadastrado" }, { status: 409 })
+    }
+    return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 })
+  }
 }

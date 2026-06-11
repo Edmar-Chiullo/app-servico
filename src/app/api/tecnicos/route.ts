@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { Prisma } from "@prisma/client"
 import { getCurrentUser, requireRole } from "@/lib/permissions"
 import { listTecnicos, createTecnico } from "@/lib/services/tecnico"
 import { tecnicoSchema } from "@/lib/validations/tecnico"
@@ -32,6 +33,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
   }
 
-  const tecnico = await createTecnico(parsed.data, user.id)
-  return NextResponse.json(tecnico, { status: 201 })
+  try {
+    const tecnico = await createTecnico(parsed.data, user.id)
+    return NextResponse.json(tecnico, { status: 201 })
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+      return NextResponse.json({ error: "CPF já cadastrado" }, { status: 409 })
+    }
+    return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 })
+  }
 }

@@ -20,7 +20,8 @@ export default function NovoTecnicoPage() {
       })
       if (!res.ok) {
         const err = await res.json()
-        throw new Error(err.error?.formErrors?.[0] || "Erro ao cadastrar")
+        const message = typeof err.error === "string" ? err.error : err.error?.formErrors?.[0] || "Erro ao cadastrar"
+        throw new Error(message)
       }
       toast.success("Técnico cadastrado!")
       router.push("/tecnicos")

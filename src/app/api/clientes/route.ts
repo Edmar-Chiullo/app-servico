@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { Prisma } from "@prisma/client"
 import { getCurrentUser } from "@/lib/permissions"
 import { listClientes, createCliente } from "@/lib/services/cliente"
 import { clienteSchema } from "@/lib/validations/cliente"
@@ -27,7 +28,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
   }
 
-  const cliente = await createCliente(parsed.data, user.id)
-
-  return NextResponse.json(cliente, { status: 201 })
+  try {
+    const cliente = await createCliente(parsed.data, user.id)
+    return NextResponse.json(cliente, { status: 201 })
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+      return NextResponse.json({ error: "CPF já cadastrado" }, { status: 409 })
+    }
+    return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 })
+  }
 }

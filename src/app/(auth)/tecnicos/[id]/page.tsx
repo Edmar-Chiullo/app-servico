@@ -40,7 +40,10 @@ export default function EditarTecnicoPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       })
-      if (!res.ok) throw new Error("Erro ao salvar")
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.error || "Erro ao salvar")
+      }
       toast.success("Técnico atualizado!")
       router.push("/tecnicos")
     } catch (err: any) {
