@@ -15,9 +15,15 @@ export function BarcodeScanner({ open, onClose, onDetected }: BarcodeScannerProp
   const onDetectedRef = useRef(onDetected)
   onDetectedRef.current = onDetected
 
+  async function stopScanner() {
+    const s = scannerRef.current
+    scannerRef.current = null
+    await s?.stop().catch(() => {})
+  }
+
   useEffect(() => {
     if (!open) {
-      scannerRef.current?.stop().catch(() => {})
+      stopScanner()
       setError("")
       return
     }
@@ -35,7 +41,6 @@ export function BarcodeScanner({ open, onClose, onDetected }: BarcodeScannerProp
           { fps: 10, qrbox: { width: 250, height: 150 } },
           (decodedText: string) => {
             if (mounted) {
-              scanner.stop().catch(() => {})
               onDetectedRef.current(decodedText)
             }
           },
@@ -52,7 +57,7 @@ export function BarcodeScanner({ open, onClose, onDetected }: BarcodeScannerProp
 
     return () => {
       mounted = false
-      scannerRef.current?.stop().catch(() => {})
+      stopScanner()
     }
   }, [open])
 

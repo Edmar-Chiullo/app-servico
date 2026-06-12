@@ -1,7 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { Button, Input } from "@/components/ui"
+import { Button, Input, BarcodeScanner } from "@/components/ui"
+import { Camera } from "lucide-react"
 
 type ProdutoFormData = {
   code: string
@@ -36,6 +37,7 @@ export function ProdutoForm({ initialData, onSave, loading }: Props) {
     active: initialData?.active ?? true,
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [showScanner, setShowScanner] = useState(false)
 
   function validate(): boolean {
     const errs: Record<string, string> = {}
@@ -65,12 +67,27 @@ export function ProdutoForm({ initialData, onSave, loading }: Props) {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Input
-          label="Código *"
-          value={form.code}
-          onChange={(e) => setField("code", e.target.value)}
-          error={errors.code}
-        />
+        <div>
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <Input
+                label="Código *"
+                value={form.code}
+                onChange={(e) => setField("code", e.target.value)}
+                error={errors.code}
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowScanner(true)}
+              className="shrink-0 inline-flex items-center justify-center h-10 w-10 rounded-md border border-gray-300 text-gray-600 hover:bg-gray-50 transition-colors mt-[26px]"
+              title="Escanear código de barras"
+            >
+              <Camera size={16} />
+            </button>
+          </div>
+          {errors.code && <p className="text-red-500 text-xs mt-1">{errors.code}</p>}
+        </div>
         <Input
           label="Descrição *"
           value={form.description}
@@ -137,6 +154,15 @@ export function ProdutoForm({ initialData, onSave, loading }: Props) {
       <Button type="submit" loading={loading}>
         {initialData ? "Salvar Alterações" : "Cadastrar Produto"}
       </Button>
+
+      <BarcodeScanner
+        open={showScanner}
+        onClose={() => setShowScanner(false)}
+        onDetected={(code) => {
+          setField("code", code)
+          setShowScanner(false)
+        }}
+      />
     </form>
   )
 }
