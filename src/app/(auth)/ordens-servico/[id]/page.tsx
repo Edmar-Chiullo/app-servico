@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter, useParams } from "next/navigation"
-import { Card, Button, Badge, Loading, Input, Combobox, Modal, FormattedText } from "@/components/ui"
+import { Card, Button, Badge, Loading, Input, Combobox, Modal, FormattedText, BarcodeScanner } from "@/components/ui"
 import type { ComboboxItem } from "@/components/ui/Combobox"
 import { STATUS_OS, STATUS_OS_COLORS, ALLOWED_STATUS_TRANSITIONS } from "@/lib/utils/constants"
 import { formatDate, formatDateTime, formatCurrency } from "@/lib/utils/format"
@@ -22,6 +22,8 @@ export default function OSDetailPage() {
   const [products, setProducts] = useState<ProductItem[]>([])
   const [concludeForm, setConcludeForm] = useState({ diagnostic: "", executedService: "", laborValue: "0" })
   const [concluding, setConcluding] = useState(false)
+  const [showScanner, setShowScanner] = useState(false)
+  const [scannerIndex, setScannerIndex] = useState(0)
 
   useEffect(() => {
     fetch(`/api/ordens-servico/${id}`)
@@ -85,6 +87,46 @@ export default function OSDetailPage() {
       description: p.description,
       code: p.code,
     }))
+  }
+
+  async function handleScan(index: number, scannedCode: string) {
+    setShowScanner(false)
+    try {
+      const res = await fetch(`/api/produtos?search=${encodeURIComponent(scannedCode)}&includeInactive=false`)
+      const json = await res.json()
+      const product = json.data.find((p: any) => p.code === scannedCode)
+
+      if (product) {
+        handleProductSelect(index, {
+          value: product.id,
+          label: `${product.description} - ${product.code}`,
+          salePrice: Number(product.salePrice),
+          description: product.description,
+          code: product.code,
+        })
+        toast.success(`Produto "${product.description}" adicionado!`)
+      } else {
+        const toastId = toast.warning(
+          <div>
+            <p className="mb-2">
+              Produto com código <strong>{scannedCode}</strong> não encontrado.
+            </p>
+            <button
+              onClick={() => {
+                router.push("/produtos/novo")
+                toast.dismiss(toastId)
+              }}
+              className="bg-blue-500 text-white px-3 py-1.5 rounded text-sm hover:bg-blue-600 transition-colors"
+            >
+              Cadastrar Produto
+            </button>
+          </div>,
+          { autoClose: false }
+        )
+      }
+    } catch {
+      toast.error("Erro ao buscar produto")
+    }
   }
 
   async function handleConclude() {
@@ -258,6 +300,8 @@ export default function OSDetailPage() {
                   value={p.description ? `[${p.code}] ${p.description}` : ""}
                   fetchItems={fetchProducts}
                   onSelect={(item) => handleProductSelect(i, item)}
+                  showCamera
+                  onCameraClick={() => { setScannerIndex(i); setShowScanner(true) }}
                 />
                 <div className="flex gap-2 items-end">
                   <Input type="number" min="1" value={p.quantity} onChange={(e) => updateProduct(i, "quantity", Number(e.target.value))} className="w-20" placeholder="Qtd" />
@@ -273,6 +317,12 @@ export default function OSDetailPage() {
           </Button>
         </div>
       </Modal>
+
+      <BarcodeScanner
+        open={showScanner}
+        onClose={() => setShowScanner(false)}
+        onDetected={(code) => handleScan(scannerIndex, code)}
+      />
     </div>
   )
 }

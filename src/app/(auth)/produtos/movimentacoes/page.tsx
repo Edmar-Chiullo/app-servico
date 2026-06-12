@@ -1,13 +1,16 @@
 "use client"
 
 import { useState } from "react"
-import { Card, Button, Input, Combobox, Select } from "@/components/ui"
+import { useRouter } from "next/navigation"
+import { Card, Button, Input, Combobox, Select, BarcodeScanner } from "@/components/ui"
 import type { ComboboxItem } from "@/components/ui/Combobox"
 import { toast } from "react-toastify"
 
 export default function MovimentacoesPage() {
+  const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [selectedProductLabel, setSelectedProductLabel] = useState("")
+  const [showScanner, setShowScanner] = useState(false)
   const [form, setForm] = useState({
     productId: "",
     type: "IN",
@@ -27,6 +30,41 @@ export default function MovimentacoesPage() {
   function handleProductSelect(item: ComboboxItem) {
     setForm((prev) => ({ ...prev, productId: item.value }))
     setSelectedProductLabel(item.label)
+  }
+
+  async function handleScan(scannedCode: string) {
+    setShowScanner(false)
+    try {
+      const res = await fetch(`/api/produtos?search=${encodeURIComponent(scannedCode)}`)
+      const json = await res.json()
+      const product = json.data.find((p: any) => p.code === scannedCode)
+
+      if (product) {
+        setForm((prev) => ({ ...prev, productId: product.id }))
+        setSelectedProductLabel(`${product.description} - ${product.code}`)
+        toast.success(`Produto "${product.description}" selecionado!`)
+      } else {
+        const toastId = toast.warning(
+          <div>
+            <p className="mb-2">
+              Produto com código <strong>{scannedCode}</strong> não encontrado.
+            </p>
+            <button
+              onClick={() => {
+                router.push("/produtos/novo")
+                toast.dismiss(toastId)
+              }}
+              className="bg-blue-500 text-white px-3 py-1.5 rounded text-sm hover:bg-blue-600 transition-colors"
+            >
+              Cadastrar Produto
+            </button>
+          </div>,
+          { autoClose: false }
+        )
+      }
+    } catch {
+      toast.error("Erro ao buscar produto")
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -74,6 +112,8 @@ export default function MovimentacoesPage() {
               value={selectedProductLabel}
               fetchItems={fetchProducts}
               onSelect={handleProductSelect}
+              showCamera
+              onCameraClick={() => setShowScanner(true)}
             />
           </div>
           <Select
@@ -103,6 +143,12 @@ export default function MovimentacoesPage() {
           </Button>
         </form>
       </Card>
+
+      <BarcodeScanner
+        open={showScanner}
+        onClose={() => setShowScanner(false)}
+        onDetected={handleScan}
+      />
     </div>
   )
 }
