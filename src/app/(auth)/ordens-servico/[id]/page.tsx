@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from "react"
 import { useRouter, useParams } from "next/navigation"
-import { Card, Button, Badge, Loading, Input, Select, Modal, FormattedText } from "@/components/ui"
+import { Card, Button, Badge, Loading, Input, Combobox, Modal, FormattedText } from "@/components/ui"
+import type { ComboboxItem } from "@/components/ui/Combobox"
 import { STATUS_OS, STATUS_OS_COLORS, ALLOWED_STATUS_TRANSITIONS } from "@/lib/utils/constants"
 import { formatDate, formatDateTime, formatCurrency } from "@/lib/utils/format"
 import { FileDown } from "lucide-react"
 import { toast } from "react-toastify"
 
-type ProductItem = { productId: string; description: string; quantity: number; unitPrice: number }
+type ProductItem = { productId: string; code: string; description: string; quantity: number; unitPrice: number }
 
 export default function OSDetailPage() {
   const router = useRouter()
@@ -19,23 +20,13 @@ export default function OSDetailPage() {
   const [loading, setLoading] = useState(true)
   const [showComplete, setShowComplete] = useState(false)
   const [products, setProducts] = useState<ProductItem[]>([])
-  const [productOptions, setProductOptions] = useState<{ value: string; label: string }[]>([])
   const [concludeForm, setConcludeForm] = useState({ diagnostic: "", executedService: "", laborValue: "0" })
   const [concluding, setConcluding] = useState(false)
 
   useEffect(() => {
-    Promise.all([
-      fetch(`/api/ordens-servico/${id}`).then((r) => r.json()),
-      fetch("/api/produtos?pageSize=1000&includeInactive=false").then((r) => r.json()),
-    ])
-      .then(([ordem, prods]) => {
-        setOs(ordem)
-        setProductOptions(prods.data.map((p: any) => ({
-          value: p.id,
-          label: `[${p.code}] ${p.description} - R$ ${Number(p.salePrice).toFixed(2)} (Est: ${p.stockQuantity})`,
-          salePrice: Number(p.salePrice),
-        })))
-      })
+    fetch(`/api/ordens-servico/${id}`)
+      .then((r) => r.json())
+      .then(setOs)
       .catch(() => toast.error("Erro ao carregar dados"))
       .finally(() => setLoading(false))
   }, [id])
@@ -59,26 +50,41 @@ export default function OSDetailPage() {
   }
 
   function addProduct() {
-    setProducts([...products, { productId: "", description: "", quantity: 1, unitPrice: 0 }])
+    setProducts([...products, { productId: "", code: "", description: "", quantity: 1, unitPrice: 0 }])
+  }
+
+  function handleProductSelect(index: number, item: ComboboxItem) {
+    const updated = [...products]
+    updated[index] = {
+      ...updated[index],
+      productId: item.value,
+      code: item.code || "",
+      description: item.description || item.label,
+      unitPrice: item.salePrice || 0,
+    }
+    setProducts(updated)
   }
 
   function updateProduct(index: number, field: keyof ProductItem, value: any) {
     const updated = [...products]
-    if (field === "productId") {
-      const opt = productOptions.find((p: any) => p.value === value)
-      updated[index] = {
-        ...updated[index],
-        productId: value,
-        unitPrice: (opt as any)?.salePrice || 0,
-      }
-    } else {
-      updated[index] = { ...updated[index], [field]: value }
-    }
+    updated[index] = { ...updated[index], [field]: value }
     setProducts(updated)
   }
 
   function removeProduct(index: number) {
     setProducts(products.filter((_, i) => i !== index))
+  }
+
+  async function fetchProducts(search: string): Promise<ComboboxItem[]> {
+    const res = await fetch(`/api/produtos?search=${encodeURIComponent(search)}&includeInactive=false`)
+    const json = await res.json()
+    return json.data.map((p: any) => ({
+      value: p.id,
+      label: `${p.description} - ${p.code}`,
+      salePrice: Number(p.salePrice),
+      description: p.description,
+      code: p.code,
+    }))
   }
 
   async function handleConclude() {
@@ -247,7 +253,12 @@ export default function OSDetailPage() {
             </div>
             {products.map((p, i) => (
               <div key={i} className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-end mb-3">
-                <Select value={p.productId} onChange={(e) => updateProduct(i, "productId", e.target.value)} options={productOptions} placeholder="Produto" className="w-full sm:flex-1" />
+                <Combobox
+                  placeholder="Buscar produto..."
+                  value={p.description ? `[${p.code}] ${p.description}` : ""}
+                  fetchItems={fetchProducts}
+                  onSelect={(item) => handleProductSelect(i, item)}
+                />
                 <div className="flex gap-2 items-end">
                   <Input type="number" min="1" value={p.quantity} onChange={(e) => updateProduct(i, "quantity", Number(e.target.value))} className="w-20" placeholder="Qtd" />
                   <Input type="number" step="0.01" value={p.unitPrice} onChange={(e) => updateProduct(i, "unitPrice", Number(e.target.value))} className="w-24" placeholder="R$" />

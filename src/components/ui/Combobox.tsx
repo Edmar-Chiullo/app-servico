@@ -13,13 +13,14 @@ export type ComboboxItem = {
 
 type ComboboxProps = {
   placeholder?: string
+  value?: string
   onSelect?: (item: ComboboxItem) => void
   fetchItems?: (search: string) => Promise<ComboboxItem[]>
   showCamera?: boolean
   onCameraClick?: () => void
 }
 
-export function Combobox({ placeholder, onSelect, fetchItems, showCamera, onCameraClick }: ComboboxProps) {
+export function Combobox({ placeholder, value, onSelect, fetchItems, showCamera, onCameraClick }: ComboboxProps) {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState("")
   const [items, setItems] = useState<ComboboxItem[]>([])
@@ -83,7 +84,7 @@ export function Combobox({ placeholder, onSelect, fetchItems, showCamera, onCame
         <div className="relative flex-1">
           <Input
             ref={inputRef}
-            value={search}
+            value={search || value || ""}
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={handleKeyDown}
             onFocus={() => search.trim() && items.length > 0 && setOpen(true)}

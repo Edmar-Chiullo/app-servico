@@ -1,12 +1,13 @@
 "use client"
 
 import { useState } from "react"
-import { Card, Button, Input, Select } from "@/components/ui"
+import { Card, Button, Input, Combobox, Select } from "@/components/ui"
+import type { ComboboxItem } from "@/components/ui/Combobox"
 import { toast } from "react-toastify"
 
 export default function MovimentacoesPage() {
   const [loading, setLoading] = useState(false)
-  const [products, setProducts] = useState<{ value: string; label: string }[]>([])
+  const [selectedProductLabel, setSelectedProductLabel] = useState("")
   const [form, setForm] = useState({
     productId: "",
     type: "IN",
@@ -14,15 +15,19 @@ export default function MovimentacoesPage() {
     reason: "",
   })
 
-  useState(() => {
-    fetch("/api/produtos?pageSize=1000")
-      .then((r) => r.json())
-      .then((json) => setProducts(json.data.map((p: any) => ({
-        value: p.id,
-        label: `[${p.code}] ${p.description} (Estoque: ${p.stockQuantity})`,
-      }))))
-      .catch(() => toast.error("Erro ao carregar produtos"))
-  })
+  async function fetchProducts(search: string): Promise<ComboboxItem[]> {
+    const res = await fetch(`/api/produtos?search=${encodeURIComponent(search)}`)
+    const json = await res.json()
+    return json.data.map((p: any) => ({
+      value: p.id,
+      label: `${p.description} - ${p.code}`,
+    }))
+  }
+
+  function handleProductSelect(item: ComboboxItem) {
+    setForm((prev) => ({ ...prev, productId: item.value }))
+    setSelectedProductLabel(item.label)
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -49,6 +54,7 @@ export default function MovimentacoesPage() {
       }
       toast.success("Movimentação registrada!")
       setForm({ productId: "", type: "IN", quantity: "1", reason: "" })
+      setSelectedProductLabel("")
     } catch (err: any) {
       toast.error(err.message)
     } finally {
@@ -61,13 +67,15 @@ export default function MovimentacoesPage() {
       <h1 className="text-2xl font-bold">Movimentação de Estoque</h1>
       <Card>
         <form onSubmit={handleSubmit} className="space-y-4 max-w-lg">
-          <Select
-            label="Produto *"
-            value={form.productId}
-            onChange={(e) => setForm({ ...form, productId: e.target.value })}
-            options={products}
-            placeholder="Selecione um produto"
-          />
+          <div>
+            <label className="block text-sm font-medium mb-1">Produto *</label>
+            <Combobox
+              placeholder="Buscar produto..."
+              value={selectedProductLabel}
+              fetchItems={fetchProducts}
+              onSelect={handleProductSelect}
+            />
+          </div>
           <Select
             label="Tipo *"
             value={form.type}
