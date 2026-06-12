@@ -82,8 +82,8 @@ export default function OSDetailPage() {
   }
 
   async function handleConclude() {
-    if (!concludeForm.diagnostic || !concludeForm.executedService || products.length === 0) {
-      toast.error("Preencha diagnóstico, serviço executado e adicione ao menos um produto")
+    if (!concludeForm.diagnostic || !concludeForm.executedService) {
+      toast.error("Preencha diagnóstico e serviço executado")
       return
     }
 
@@ -242,7 +242,7 @@ export default function OSDetailPage() {
 
           <div>
             <div className="flex items-start justify-between gap-2 mb-2">
-              <h4 className="font-medium text-sm">Produtos Utilizados *</h4>
+              <h4 className="font-medium text-sm">Produtos Utilizados</h4>
               <Button type="button" size="sm" onClick={addProduct} className="shrink-0">+ Adicionar Produto</Button>
             </div>
             {products.map((p, i) => (

@@ -19,7 +19,7 @@ export const concluirOSSchema = z.object({
     productId: z.string(),
     quantity: z.coerce.number().int().min(1),
     unitPrice: z.coerce.number().min(0),
-  })).min(1, "Adicione pelo menos um produto"),
+  })),
 })
 
 export type ConcluirOSFormData = z.infer<typeof concluirOSSchema>
