@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { Card, Button, Badge, Loading, Input, Combobox, Modal, FormattedText, BarcodeScanner } from "@/components/ui"
 import type { ComboboxItem } from "@/components/ui/Combobox"
@@ -26,11 +26,13 @@ export default function OSDetailPage() {
   const [scannerIndex, setScannerIndex] = useState(0)
 
   useEffect(() => {
+    let mounted = true
     fetch(`/api/ordens-servico/${id}`)
       .then((r) => r.json())
-      .then(setOs)
-      .catch(() => toast.error("Erro ao carregar dados"))
-      .finally(() => setLoading(false))
+      .then((data) => { if (mounted) setOs(data) })
+      .catch(() => { if (mounted) toast.error("Erro ao carregar dados") })
+      .finally(() => { if (mounted) setLoading(false) })
+    return () => { mounted = false }
   }, [id])
 
   async function handleStatusChange(newStatus: string) {
@@ -194,10 +196,10 @@ export default function OSDetailPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card title="Informações">
           <dl className="space-y-3 text-sm">
-            <div className="flex justify-between"><dt className="text-gray-500">Cliente:</dt><dd><FormattedText>{os.customer.name}</FormattedText></dd></div>
-            <div className="flex justify-between"><dt className="text-gray-500">CPF:</dt><dd>{os.customer.cpf}</dd></div>
-            <div className="flex justify-between"><dt className="text-gray-500">Veículo:</dt><dd><FormattedText>{os.vehicle.brand}</FormattedText> <FormattedText>{os.vehicle.model}</FormattedText> - {os.vehicle.plate}</dd></div>
-            <div className="flex justify-between"><dt className="text-gray-500">Técnico:</dt><dd><FormattedText>{os.technician.name}</FormattedText></dd></div>
+            <div className="flex justify-between"><dt className="text-gray-500">Cliente:</dt><dd><FormattedText>{os.customer?.name}</FormattedText></dd></div>
+            <div className="flex justify-between"><dt className="text-gray-500">CPF:</dt><dd>{os.customer?.cpf}</dd></div>
+            <div className="flex justify-between"><dt className="text-gray-500">Veículo:</dt><dd><FormattedText>{os.vehicle?.brand}</FormattedText> <FormattedText>{os.vehicle?.model}</FormattedText> - {os.vehicle?.plate}</dd></div>
+            <div className="flex justify-between"><dt className="text-gray-500">Técnico:</dt><dd><FormattedText>{os.technician?.name}</FormattedText></dd></div>
             <div className="flex justify-between"><dt className="text-gray-500">Abertura:</dt><dd>{formatDateTime(os.openingDate)}</dd></div>
             {os.completionDate && <div className="flex justify-between"><dt className="text-gray-500">Conclusão:</dt><dd>{formatDateTime(os.completionDate)}</dd></div>}
             <div className="flex justify-between"><dt className="text-gray-500">Prioridade:</dt><dd className="capitalize">{os.priority}</dd></div>
@@ -234,8 +236,8 @@ export default function OSDetailPage() {
           <table className="min-w-full text-sm">
             <thead><tr className="text-left text-gray-500"><th className="px-2 py-1">Produto</th><th className="px-2 py-1">Qtd</th><th className="px-2 py-1">Valor Unit.</th><th className="px-2 py-1">Total</th></tr></thead>
             <tbody>
-              {os.serviceOrderProducts.map((sop: any) => (
-                <tr key={sop.id}><td className="px-2 py-1">{sop.product.description}</td><td className="px-2 py-1">{sop.quantity}</td><td className="px-2 py-1">{formatCurrency(sop.unitPrice)}</td><td className="px-2 py-1">{formatCurrency(sop.totalPrice)}</td></tr>
+                {os.serviceOrderProducts.map((sop: any) => (
+                  <tr key={sop.id}><td className="px-2 py-1">{sop.product?.description}</td><td className="px-2 py-1">{sop.quantity}</td><td className="px-2 py-1">{formatCurrency(sop.unitPrice)}</td><td className="px-2 py-1">{formatCurrency(sop.totalPrice)}</td></tr>
               ))}
             </tbody>
           </table>

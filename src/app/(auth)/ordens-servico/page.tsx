@@ -85,9 +85,9 @@ export default function OrdensServicoPage() {
         <Table
           columns={[
             { key: "number", header: "Nº", render: (o: OS) => `#${o.number}` },
-            { key: "customer", header: "Cliente", render: (o: OS) => <FormattedText>{o.customer.name}</FormattedText> },
-            { key: "vehicle", header: "Veículo", render: (o: OS) => <><FormattedText>{o.vehicle.model}</FormattedText> - {o.vehicle.plate}</> },
-            { key: "technician", header: "Técnico", render: (o: OS) => <FormattedText>{o.technician.name}</FormattedText> },
+            { key: "customer", header: "Cliente", render: (o: OS) => <FormattedText>{o.customer?.name}</FormattedText> },
+            { key: "vehicle", header: "Veículo", render: (o: OS) => <><FormattedText>{o.vehicle?.model}</FormattedText> - {o.vehicle?.plate}</> },
+            { key: "technician", header: "Técnico", render: (o: OS) => <FormattedText>{o.technician?.name}</FormattedText> },
             {
               key: "status",
               header: "Status",

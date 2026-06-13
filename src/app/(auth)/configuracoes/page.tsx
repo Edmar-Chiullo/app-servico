@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { Card, Button, Input, Loading } from "@/components/ui"
 import { toast } from "react-toastify"
 
@@ -27,9 +27,11 @@ export default function ConfiguracoesPage() {
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
+    let mounted = true
     fetch("/api/configuracoes")
       .then((r) => r.json())
       .then((data) => {
+        if (!mounted) return
         if (data) {
           setForm({
             name: data.name || "",
@@ -47,7 +49,8 @@ export default function ConfiguracoesPage() {
         }
       })
       .catch(() => {})
-      .finally(() => setLoading(false))
+      .finally(() => { if (mounted) setLoading(false) })
+    return () => { mounted = false }
   }, [])
 
   async function handleSave(e: React.FormEvent) {

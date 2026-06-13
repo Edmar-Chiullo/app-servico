@@ -75,6 +75,7 @@ export function ProdutoForm({ initialData, onSave, loading }: Props) {
                 value={form.code}
                 onChange={(e) => setField("code", e.target.value)}
                 error={errors.code}
+                autoFocus
               />
             </div>
             <button

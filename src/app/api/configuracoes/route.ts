@@ -20,7 +20,12 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: "Apenas administradores" }, { status: 403 })
   }
 
-  const body = await req.json()
+  let body: any
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ error: "JSON inválido" }, { status: 400 })
+  }
   const settings = await prisma.companySettings.upsert({
     where: { id: "default" },
     update: body,

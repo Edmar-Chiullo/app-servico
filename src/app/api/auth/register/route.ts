@@ -1,13 +1,30 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import bcrypt from "bcryptjs"
+import { getCurrentUser, requireRole } from "@/lib/permissions"
+import { UserRole } from "@/lib/enums"
 
 export async function POST(req: NextRequest) {
-  const body = await req.json()
-  const { name, email, password } = body
+  const user = await getCurrentUser()
+  const perm = requireRole(user, [UserRole.ADMIN])
+  if (!perm.allowed) {
+    return NextResponse.json({ error: "Apenas administradores podem criar usuários" }, { status: 403 })
+  }
+
+  let body: any
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ error: "JSON inválido" }, { status: 400 })
+  }
+  const { name, email, password, role } = body
 
   if (!name || !email || !password) {
     return NextResponse.json({ error: "Campos obrigatórios" }, { status: 400 })
+  }
+
+  if (role && !Object.values(UserRole).includes(role)) {
+    return NextResponse.json({ error: "Role inválida" }, { status: 400 })
   }
 
   const existing = await prisma.user.findUnique({ where: { email } })
@@ -17,14 +34,14 @@ export async function POST(req: NextRequest) {
 
   const hashedPassword = await bcrypt.hash(password, 12)
 
-  const user = await prisma.user.create({
+  const created = await prisma.user.create({
     data: {
       name,
       email,
       password: hashedPassword,
-      role: "ADMIN",
+      role: role || UserRole.ATTENDANT,
     },
   })
 
-  return NextResponse.json({ id: user.id, name: user.name, email: user.email })
+  return NextResponse.json({ id: created.id, name: created.name, email: created.email })
 }

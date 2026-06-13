@@ -64,7 +64,7 @@ export default function VeiculosPage() {
             { key: "brand", header: "Marca", render: (v: Veiculo) => v.brand ? <FormattedText>{v.brand}</FormattedText> : "-" },
             { key: "color", header: "Cor", render: (v: Veiculo) => <FormattedText>{v.color}</FormattedText> },
             { key: "year", header: "Ano", render: (v: Veiculo) => v.year || "-" },
-            { key: "customer", header: "Cliente", render: (v: Veiculo) => <FormattedText>{v.customer.name}</FormattedText> },
+            { key: "customer", header: "Cliente", render: (v: Veiculo) => <FormattedText>{v.customer?.name}</FormattedText> },
           ]}
           data={data}
           onRowClick={(v) => router.push(`/veiculos/${v.id}`)}

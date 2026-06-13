@@ -71,7 +71,7 @@ export default function ClientesPage() {
             { key: "cpf", header: "CPF", render: (c: Cliente) => formatCPF(c.cpf) },
             { key: "phone", header: "Telefone", render: (c: Cliente) => formatPhone(c.phone) },
             { key: "email", header: "Email", render: (c: Cliente) => c.email ? <FormattedText>{c.email}</FormattedText> : "-" },
-            { key: "vehicles", header: "Veículos", render: (c: Cliente) => c.vehicles.length },
+            { key: "vehicles", header: "Veículos", render: (c: Cliente) => c.vehicles?.length ?? 0 },
             {
               key: "active",
               header: "Status",

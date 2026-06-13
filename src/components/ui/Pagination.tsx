@@ -10,10 +10,7 @@ export function Pagination({ page, totalPages, onPageChange }: PaginationProps) 
   if (totalPages <= 1) return null
 
   return (
-    <div className="flex items-center justify-between mt-4 gap-2">
-      <p className="text-sm text-gray-600">
-        Página {page} de {totalPages}
-      </p>
+    <div className="flex flex-col items-center mt-4 gap-2">
       <div className="flex gap-1">
         <button
           onClick={() => onPageChange(page - 1)}
@@ -57,6 +54,9 @@ export function Pagination({ page, totalPages, onPageChange }: PaginationProps) 
           Próximo
         </button>
       </div>
+      <p className="text-sm text-gray-600">
+        Página {page} de {totalPages}
+      </p>
     </div>
   )
 }

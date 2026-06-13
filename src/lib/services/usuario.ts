@@ -3,6 +3,7 @@ import { createAuditLog } from "./audit"
 import { Prisma } from "@prisma/client"
 import { AuditOperation } from "../enums"
 import bcrypt from "bcryptjs"
+import { usuarioSchema, usuarioUpdateSchema } from "../validations"
 
 type UsuarioInput = {
   name: string
@@ -17,7 +18,7 @@ export async function listUsuarios(params: {
   pageSize?: number
   includeInactive?: boolean
 }) {
-  const { search, page = 1, pageSize = 10, includeInactive = false } = params
+  const { search, page = 1, pageSize = 5, includeInactive = false } = params
 
   const where: Prisma.UserWhereInput = {}
 
@@ -52,6 +53,7 @@ export async function listUsuarios(params: {
 }
 
 export async function createUsuario(data: UsuarioInput, userId: string) {
+  usuarioSchema.parse(data)
   data.name = data.name.toUpperCase()
   const hashedPassword = await bcrypt.hash(data.password, 12)
 
@@ -94,6 +96,7 @@ export async function updateUsuario(
   data: Partial<UsuarioInput & { active: boolean }>,
   userId: string
 ) {
+  usuarioUpdateSchema.parse(data)
   if (data.name) data.name = data.name.toUpperCase()
 
   const updateData: any = {}

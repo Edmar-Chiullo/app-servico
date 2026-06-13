@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { Card, Table, Badge, Loading, FormattedText } from "@/components/ui"
 import { VeiculoForm } from "../components/VeiculoForm"
@@ -30,32 +30,36 @@ export default function EditarVeiculoPage() {
   const [ordens, setOrdens] = useState<OS[]>([])
 
   useEffect(() => {
+    let mounted = true
     async function load() {
       try {
         const res = await fetch(`/api/veiculos/${id}`)
         if (!res.ok) throw new Error("Veículo não encontrado")
         const json = await res.json()
-        setVeiculo(json)
+        if (mounted) setVeiculo(json)
       } catch (err: any) {
-        toast.error(err.message)
-        router.push("/veiculos")
+        if (mounted) toast.error(err.message)
+        if (mounted) router.push("/veiculos")
       } finally {
-        setLoading(false)
+        if (mounted) setLoading(false)
       }
     }
     load()
+    return () => { mounted = false }
   }, [id, router])
 
   useEffect(() => {
+    let mounted = true
     async function loadOrdens() {
       try {
         const res = await fetch(`/api/ordens-servico?vehicleId=${id}&pageSize=100`)
         if (!res.ok) return
         const json = await res.json()
-        setOrdens(json.data || [])
+        if (mounted) setOrdens(json.data || [])
       } catch { }
     }
     loadOrdens()
+    return () => { mounted = false }
   }, [id])
 
   async function handleSave(data: any) {
@@ -104,7 +108,7 @@ export default function EditarVeiculoPage() {
           columns={[
             { key: "number", header: "Nº", render: (o: OS) => `#${o.number}` },
             { key: "openingDate", header: "Data", render: (o: OS) => formatDate(o.openingDate) },
-            { key: "customer", header: "Cliente", render: (o: OS) => <FormattedText>{o.customer.name}</FormattedText> },
+            { key: "customer", header: "Cliente", render: (o: OS) => <FormattedText>{o.customer?.name}</FormattedText> },
             { key: "problemDescription", header: "Problema", render: (o: OS) => o.problemDescription || "-" },
             {
               key: "status",

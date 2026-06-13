@@ -81,6 +81,7 @@ export function ClienteForm({ initialData, onSave, loading }: Props) {
           value={form.name}
           onChange={(e) => setField("name", e.target.value)}
           error={errors.name}
+          autoFocus
         />
         <Input
           label="CPF *"

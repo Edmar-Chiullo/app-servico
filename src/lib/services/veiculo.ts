@@ -2,6 +2,7 @@ import { prisma } from "../prisma"
 import { createAuditLog } from "./audit"
 import { Prisma } from "@prisma/client"
 import { AuditOperation } from "../enums"
+import { veiculoSchema } from "../validations"
 
 type VeiculoInput = {
   plate: string
@@ -19,7 +20,7 @@ export async function listVeiculos(params: {
   page?: number
   pageSize?: number
 }) {
-  const { search, customerId, page = 1, pageSize = 10 } = params
+  const { search, customerId, page = 1, pageSize = 5 } = params
 
   const where: Prisma.VehicleWhereInput = { active: true }
 
@@ -55,6 +56,7 @@ export async function getVeiculoById(id: string) {
 }
 
 export async function createVeiculo(data: VeiculoInput, userId: string) {
+  veiculoSchema.parse(data)
   if (data.model) data.model = data.model.toUpperCase()
   if (data.brand) data.brand = data.brand.toUpperCase()
   if (data.color) data.color = data.color.toUpperCase()
@@ -72,6 +74,7 @@ export async function createVeiculo(data: VeiculoInput, userId: string) {
 }
 
 export async function updateVeiculo(id: string, data: Partial<VeiculoInput>, userId: string) {
+  veiculoSchema.partial().parse(data)
   if (data.model) data.model = data.model.toUpperCase()
   if (data.brand) data.brand = data.brand.toUpperCase()
   if (data.color) data.color = data.color.toUpperCase()

@@ -1,8 +1,8 @@
 import { prisma } from "../prisma"
-import { createAuditLog } from "./audit"
 import { AuditOperation, ServiceOrderStatus, StockMovementType } from "../enums"
 import { Prisma } from "@prisma/client"
 import { ALLOWED_STATUS_TRANSITIONS } from "../utils/constants"
+import { ordemServicoSchema, concluirOSSchema, statusUpdateSchema } from "../validations"
 
 type CreateOSInput = {
   customerId: string
@@ -32,7 +32,7 @@ export async function listOrdens(params: {
   page?: number
   pageSize?: number
 }) {
-  const { search, status, customerId, vehicleId, technicianId, dateFrom, dateTo, page = 1, pageSize = 10 } = params
+  const { search, status, customerId, vehicleId, technicianId, dateFrom, dateTo, page = 1, pageSize = 5 } = params
 
   const where: Prisma.ServiceOrderWhereInput = {}
 
@@ -88,6 +88,7 @@ export async function getOrdemById(id: string) {
 
 export async function createOrdem(input: CreateOSInput) {
   const { responsibleUserId, ...data } = input
+  ordemServicoSchema.parse(data)
 
   const lastOrder = await prisma.serviceOrder.findFirst({
     orderBy: { number: "desc" },
@@ -96,28 +97,34 @@ export async function createOrdem(input: CreateOSInput) {
 
   const nextNumber = (lastOrder?.number ?? 0) + 1
 
-  const ordem = await prisma.serviceOrder.create({
-    data: {
-      ...data,
-      number: nextNumber,
-      responsibleUserId,
-    },
-  })
+  const ordem = await prisma.$transaction(async (tx) => {
+    const created = await tx.serviceOrder.create({
+      data: {
+        ...data,
+        number: nextNumber,
+        responsibleUserId,
+      },
+    })
 
-  await prisma.statusHistory.create({
-    data: {
-      serviceOrderId: ordem.id,
-      toStatus: ServiceOrderStatus.OPEN,
-      changedByUserId: responsibleUserId,
-    },
-  })
+    await tx.statusHistory.create({
+      data: {
+        serviceOrderId: created.id,
+        toStatus: ServiceOrderStatus.OPEN,
+        changedByUserId: responsibleUserId,
+      },
+    })
 
-  await createAuditLog({
-    userId: responsibleUserId,
-    entityType: "ServiceOrder",
-    entityId: ordem.id,
-    operation: AuditOperation.CREATE,
-    changes: input,
+    await tx.auditLog.create({
+      data: {
+        userId: responsibleUserId,
+        entityType: "ServiceOrder",
+        entityId: created.id,
+        operation: AuditOperation.CREATE,
+        changes: JSON.stringify(input),
+      },
+    })
+
+    return created
   })
 
   return ordem
@@ -128,6 +135,7 @@ export async function updateStatus(
   newStatus: ServiceOrderStatus,
   userId: string
 ) {
+  statusUpdateSchema.parse({ status: newStatus })
   const ordem = await prisma.serviceOrder.findUnique({ where: { id } })
   if (!ordem) throw new Error("Ordem de serviço não encontrada")
 
@@ -141,33 +149,39 @@ export async function updateStatus(
     updateData.completionDate = new Date()
   }
 
-  const updated = await prisma.serviceOrder.update({
-    where: { id },
-    data: updateData,
-  })
-
-  await prisma.statusHistory.create({
-    data: {
-      serviceOrderId: id,
-      fromStatus: ordem.status,
-      toStatus: newStatus,
-      changedByUserId: userId,
-    },
-  })
-
-  await createAuditLog({
-    userId,
-    entityType: "ServiceOrder",
-    entityId: id,
-    operation: AuditOperation.STATUS_CHANGE,
-    changes: { from: ordem.status, to: newStatus },
-  })
-
-  if (newStatus === ServiceOrderStatus.CANCELLED) {
-    await prisma.financialEntry.deleteMany({
-      where: { serviceOrderId: id },
+  const updated = await prisma.$transaction(async (tx) => {
+    const updated = await tx.serviceOrder.update({
+      where: { id },
+      data: updateData,
     })
-  }
+
+    await tx.statusHistory.create({
+      data: {
+        serviceOrderId: id,
+        fromStatus: ordem.status,
+        toStatus: newStatus,
+        changedByUserId: userId,
+      },
+    })
+
+    await tx.auditLog.create({
+      data: {
+        userId,
+        entityType: "ServiceOrder",
+        entityId: id,
+        operation: AuditOperation.STATUS_CHANGE,
+        changes: JSON.stringify({ from: ordem.status, to: newStatus }),
+      },
+    })
+
+    if (newStatus === ServiceOrderStatus.CANCELLED) {
+      await tx.financialEntry.deleteMany({
+        where: { serviceOrderId: id },
+      })
+    }
+
+    return updated
+  })
 
   return updated
 }
@@ -177,26 +191,27 @@ export async function completeOrdem(
   input: CompleteOSInput,
   userId: string
 ) {
+  concluirOSSchema.parse(input)
   const ordem = await prisma.serviceOrder.findUnique({ where: { id } })
   if (!ordem) throw new Error("Ordem de serviço não encontrada")
   if (ordem.status !== ServiceOrderStatus.IN_PROGRESS && ordem.status !== ServiceOrderStatus.WAITING_PARTS) {
     throw new Error("Ordem deve estar em Andamento ou Aguardando Peças para ser concluída")
   }
 
-  let materialsValue = 0
-
-  for (const item of input.products) {
-    const product = await prisma.product.findUnique({ where: { id: item.productId } })
-    if (!product || !product.active) throw new Error(`Produto ${item.productId} inválido ou inativo`)
-    if (product.stockQuantity < item.quantity) throw new Error(`Estoque insuficiente para ${product.description}`)
-
-    const totalPrice = item.quantity * item.unitPrice
-    materialsValue += totalPrice
-  }
-
-  const totalValue = input.laborValue + materialsValue
-
   const result = await prisma.$transaction(async (tx) => {
+    let materialsValue = 0
+
+    for (const item of input.products) {
+      const product = await tx.product.findUnique({ where: { id: item.productId } })
+      if (!product || !product.active) throw new Error(`Produto ${item.productId} inválido ou inativo`)
+      if (product.stockQuantity < item.quantity) throw new Error(`Estoque insuficiente para ${product.description}`)
+
+      const totalPrice = item.quantity * item.unitPrice
+      materialsValue += totalPrice
+    }
+
+    const totalValue = input.laborValue + materialsValue
+
     const updated = await tx.serviceOrder.update({
       where: { id },
       data: {

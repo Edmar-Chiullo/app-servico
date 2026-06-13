@@ -2,6 +2,7 @@ import { prisma } from "../prisma"
 import { createAuditLog } from "./audit"
 import { Prisma } from "@prisma/client"
 import { AuditOperation } from "../enums"
+import { clienteSchema } from "../validations"
 
 type ClienteCreateInput = {
   name: string
@@ -25,7 +26,7 @@ export async function listClientes(params: {
   pageSize?: number
   includeInactive?: boolean
 }) {
-  const { search, page = 1, pageSize = 10, includeInactive = false } = params
+  const { search, page = 1, pageSize = 5, includeInactive = false } = params
 
   const where: Prisma.CustomerWhereInput = {}
 
@@ -62,6 +63,7 @@ export async function getClienteById(id: string) {
 }
 
 export async function createCliente(data: ClienteCreateInput, userId: string) {
+  clienteSchema.parse(data)
   data.name = data.name.toUpperCase()
   const cliente = await prisma.customer.create({ data })
 
@@ -77,6 +79,7 @@ export async function createCliente(data: ClienteCreateInput, userId: string) {
 }
 
 export async function updateCliente(id: string, data: ClienteUpdateInput, userId: string) {
+  clienteSchema.partial().parse(data)
   if (data.name) data.name = data.name.toUpperCase()
   const oldData = await prisma.customer.findUnique({ where: { id } })
   const cliente = await prisma.customer.update({ where: { id }, data })

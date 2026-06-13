@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { Card, Loading } from "@/components/ui"
 import { DashboardData } from "@/types"
 import { formatCurrency } from "@/lib/utils/format"
@@ -22,24 +22,29 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend,
 export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
+  const mountedRef = useRef(true)
 
   async function loadData() {
     try {
       const res = await fetch("/api/dashboard")
       if (!res.ok) throw new Error("Erro ao carregar dashboard")
       const json = await res.json()
-      setData(json)
+      if (mountedRef.current) setData(json)
     } catch (err: any) {
-      toast.error(err.message)
+      if (mountedRef.current) toast.error(err.message)
     } finally {
-      setLoading(false)
+      if (mountedRef.current) setLoading(false)
     }
   }
 
   useEffect(() => {
+    mountedRef.current = true
     loadData()
     const interval = setInterval(loadData, 5 * 60 * 1000)
-    return () => clearInterval(interval)
+    return () => {
+      mountedRef.current = false
+      clearInterval(interval)
+    }
   }, [])
 
   if (loading) return <Loading text="Carregando dashboard..." />

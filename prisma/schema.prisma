@@ -88,9 +88,11 @@ model Customer {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  vehicles         Vehicle[]
-  serviceOrders    ServiceOrder[]
-  whatsappMessages WhatsAppMessage[]
+  vehicles                Vehicle[]
+  serviceOrders           ServiceOrder[]
+  whatsappMessages        WhatsAppMessage[]
+  previousOwnerships      OwnershipHistory[] @relation("PreviousOwnershipHistory")
+  newOwnerships           OwnershipHistory[] @relation("NewOwnershipHistory")
 
   @@index([name, cpf])
   @@map("customers")
@@ -123,11 +125,17 @@ model OwnershipHistory {
   vehicleId          String
   vehicle            Vehicle  @relation(fields: [vehicleId], references: [id])
   previousCustomerId String?
+  previousCustomer   Customer? @relation("PreviousOwnershipHistory", fields: [previousCustomerId], references: [id])
   newCustomerId      String
+  newCustomer        Customer @relation("NewOwnershipHistory", fields: [newCustomerId], references: [id])
   changedByUserId    String
   changedBy          User     @relation(fields: [changedByUserId], references: [id])
   changedAt          DateTime @default(now())
 
+  @@index([vehicleId])
+  @@index([previousCustomerId])
+  @@index([newCustomerId])
+  @@index([changedByUserId])
   @@map("ownership_histories")
 }
 
@@ -186,6 +194,8 @@ model StockMovement {
   orderId String?
   order   ServiceOrder? @relation(fields: [orderId], references: [id])
 
+  @@index([productId])
+  @@index([orderId])
   @@map("stock_movements")
 }
 
@@ -250,6 +260,7 @@ model StatusHistory {
   changedByUserId String
   changedBy       User         @relation(fields: [changedByUserId], references: [id])
 
+  @@index([serviceOrderId])
   @@map("status_histories")
 }
 
@@ -263,6 +274,7 @@ model FinancialEntry {
   serviceOrder   ServiceOrder @relation(fields: [serviceOrderId], references: [id])
 
   @@index([date])
+  @@index([serviceOrderId])
   @@map("financial_entries")
 }
 
@@ -293,6 +305,7 @@ model WhatsAppMessage {
   sentByUserId String?
   sentBy       User?   @relation(fields: [sentByUserId], references: [id])
 
+  @@index([customerId])
   @@map("whatsapp_messages")
 }
 

@@ -2,6 +2,7 @@ import { prisma } from "../prisma"
 import { createAuditLog } from "./audit"
 import { Prisma } from "@prisma/client"
 import { AuditOperation, StockMovementType } from "../enums"
+import { produtoSchema } from "../validations"
 
 type ProdutoInput = {
   code: string
@@ -22,7 +23,7 @@ export async function listProdutos(params: {
   lowStock?: boolean
   includeInactive?: boolean
 }) {
-  const { search, page = 1, pageSize = 10, lowStock, includeInactive = false } = params
+  const { search, page = 1, pageSize = 5, lowStock, includeInactive = false } = params
 
   const where: Prisma.ProductWhereInput = {}
 
@@ -49,6 +50,7 @@ export async function listProdutos(params: {
 }
 
 export async function createProduto(data: ProdutoInput, userId: string) {
+  produtoSchema.parse(data)
   if (data.description) data.description = data.description.toUpperCase()
   if (data.category) data.category = data.category.toUpperCase()
   const produto = await prisma.product.create({ data })
@@ -65,10 +67,22 @@ export async function createProduto(data: ProdutoInput, userId: string) {
 }
 
 export async function getProduto(id: string) {
-  return prisma.product.findUnique({ where: { id } })
+  return prisma.product.findUnique({
+    where: { id },
+    include: {
+      stockMovements: {
+        orderBy: { createdAt: "desc" },
+        include: {
+          user: { select: { name: true } },
+          order: { select: { number: true } },
+        },
+      },
+    },
+  })
 }
 
 export async function updateProduto(id: string, data: Partial<ProdutoInput & { active: boolean }>, userId: string) {
+  produtoSchema.partial().parse(data)
   if (data.description) data.description = data.description.toUpperCase()
   if (data.category) data.category = data.category.toUpperCase()
   const oldData = await prisma.product.findUnique({ where: { id } })
@@ -111,40 +125,45 @@ export async function registerStockMovement(
   userId: string,
   orderId?: string
 ) {
-  const product = await prisma.product.findUnique({ where: { id: productId } })
-  if (!product) throw new Error("Produto não encontrado")
+  const movement = await prisma.$transaction(async (tx) => {
+    const product = await tx.product.findUnique({ where: { id: productId } })
+    if (!product) throw new Error("Produto não encontrado")
 
-  let newQuantity = product.stockQuantity
+    let newQuantity = product.stockQuantity
 
-  if (type === StockMovementType.IN) {
-    newQuantity += quantity
-  } else if (type === StockMovementType.OUT || type === StockMovementType.SERVICE_ORDER) {
-    if (product.stockQuantity < quantity) {
-      throw new Error("Estoque insuficiente")
+    if (type === StockMovementType.IN) {
+      newQuantity += quantity
+    } else if (type === StockMovementType.OUT || type === StockMovementType.SERVICE_ORDER) {
+      if (product.stockQuantity < quantity) {
+        throw new Error("Estoque insuficiente")
+      }
+      newQuantity -= quantity
+    } else {
+      newQuantity += quantity
     }
-    newQuantity -= quantity
-  } else {
-    newQuantity += quantity
-  }
 
-  if (newQuantity < 0) throw new Error("Estoque não pode ser negativo")
+    if (newQuantity < 0) throw new Error("Estoque não pode ser negativo")
 
-  const [movement] = await prisma.$transaction([
-    prisma.stockMovement.create({
+    const movement = await tx.stockMovement.create({
       data: { productId, type, quantity, reason, userId, orderId },
-    }),
-    prisma.product.update({
+    })
+
+    await tx.product.update({
       where: { id: productId },
       data: { stockQuantity: newQuantity },
-    }),
-  ])
+    })
 
-  await createAuditLog({
-    userId,
-    entityType: "StockMovement",
-    entityId: movement.id,
-    operation: AuditOperation.STOCK_MOVE,
-    changes: { productId, type, quantity, previousStock: product.stockQuantity, newStock: newQuantity, reason },
+    await tx.auditLog.create({
+      data: {
+        userId,
+        entityType: "StockMovement",
+        entityId: movement.id,
+        operation: AuditOperation.STOCK_MOVE,
+        changes: JSON.stringify({ productId, type, quantity, previousStock: product.stockQuantity, newStock: newQuantity, reason }),
+      },
+    })
+
+    return movement
   })
 
   return movement

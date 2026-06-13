@@ -2,6 +2,7 @@ import { prisma } from "../prisma"
 import { createAuditLog } from "./audit"
 import { Prisma } from "@prisma/client"
 import { AuditOperation } from "../enums"
+import { tecnicoSchema } from "../validations"
 
 type TecnicoInput = {
   name: string
@@ -16,7 +17,7 @@ export async function listTecnicos(params: {
   pageSize?: number
   includeInactive?: boolean
 }) {
-  const { search, page = 1, pageSize = 10, includeInactive = false } = params
+  const { search, page = 1, pageSize = 5, includeInactive = false } = params
 
   const where: Prisma.TechnicianWhereInput = {}
 
@@ -43,6 +44,7 @@ export async function listTecnicos(params: {
 }
 
 export async function createTecnico(data: TecnicoInput, userId: string) {
+  tecnicoSchema.parse(data)
   data.name = data.name.toUpperCase()
   const tecnico = await prisma.technician.create({
     data: { ...data, createdByUserId: userId },
@@ -64,6 +66,7 @@ export async function getTecnico(id: string) {
 }
 
 export async function updateTecnico(id: string, data: Partial<TecnicoInput & { active: boolean }>, userId: string) {
+  tecnicoSchema.partial().parse(data)
   if (data.name) data.name = data.name.toUpperCase()
   const oldData = await prisma.technician.findUnique({ where: { id } })
   const tecnico = await prisma.technician.update({ where: { id }, data })
