@@ -1,13 +1,11 @@
 import { prisma } from "../prisma"
 import { Prisma } from "@prisma/client"
+import { getBrazilDayRange, getBrazilWeekRange, getBrazilMonthRange } from "@/lib/utils/date"
 
 export async function getDashboardData() {
-  const now = new Date()
-  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  const startOfWeek = new Date(now)
-  startOfWeek.setDate(now.getDate() - now.getDay())
-  startOfWeek.setHours(0, 0, 0, 0)
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+  const { startOfDay, endOfDay } = getBrazilDayRange()
+  const { startOfWeek } = getBrazilWeekRange()
+  const { startOfMonth } = getBrazilMonthRange()
 
   const [
     servicesToday,
@@ -43,7 +41,7 @@ export async function getDashboardData() {
     }),
     prisma.financialEntry.aggregate({
       _sum: { value: true },
-      where: { date: { gte: startOfDay } },
+      where: { date: { gte: startOfDay, lt: endOfDay } },
     }),
     prisma.financialEntry.aggregate({
       _sum: { value: true },

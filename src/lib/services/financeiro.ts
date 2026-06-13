@@ -1,33 +1,38 @@
 import { prisma } from "../prisma"
 import { createAuditLog } from "./audit"
 import { AuditOperation } from "../enums"
+import { getBrazilDayRange, getBrazilWeekRange, getBrazilMonthRange } from "@/lib/utils/date"
 
 export async function getFinancialSummary(period: "daily" | "weekly" | "monthly") {
-  const now = new Date()
   let startDate: Date
+  let endDate: Date | undefined
 
   switch (period) {
-    case "daily":
-      startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    case "daily": {
+      const range = getBrazilDayRange()
+      startDate = range.startOfDay
+      endDate = range.endOfDay
       break
+    }
     case "weekly":
-      startDate = new Date(now)
-      startDate.setDate(now.getDate() - now.getDay())
-      startDate.setHours(0, 0, 0, 0)
+      startDate = getBrazilWeekRange().startOfWeek
       break
     case "monthly":
-      startDate = new Date(now.getFullYear(), now.getMonth(), 1)
+      startDate = getBrazilMonthRange().startOfMonth
       break
   }
+
+  const dateFilter: any = { gte: startDate }
+  if (endDate) dateFilter.lt = endDate
 
   const [entries, exits] = await Promise.all([
     prisma.financialEntry.aggregate({
       _sum: { value: true },
-      where: { date: { gte: startDate } },
+      where: { date: dateFilter },
     }),
     prisma.financialExit.aggregate({
       _sum: { value: true },
-      where: { date: { gte: startDate } },
+      where: { date: dateFilter },
     }),
   ])
 
