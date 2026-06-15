@@ -18,7 +18,7 @@ export function BarcodeScanner({ open, onClose, onDetected }: BarcodeScannerProp
   async function stopScanner() {
     const s = scannerRef.current
     scannerRef.current = null
-    await s?.stop().catch(() => {})
+    try { await s?.stop() } catch { /* scanner já parou */ }
   }
 
   useEffect(() => {

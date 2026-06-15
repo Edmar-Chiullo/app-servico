@@ -1,9 +1,9 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Card, Table, Pagination, Input, Button, Badge, FormattedText } from "@/components/ui"
-import { toast } from "react-toastify"
+import { useQuery, keepPreviousData } from "@tanstack/react-query"
+import { Card, Table, Pagination, Input, Button, Badge, FormattedText, Loading } from "@/components/ui"
 import { formatCPF } from "@/lib/utils/cpf"
 import { formatPhone } from "@/lib/utils/phone"
 
@@ -20,32 +20,20 @@ type Cliente = {
 
 export default function ClientesPage() {
   const router = useRouter()
-  const [data, setData] = useState<Cliente[]>([])
-  const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
   const [search, setSearch] = useState("")
-  const [loading, setLoading] = useState(true)
 
-  const loadData = useCallback(async () => {
-    setLoading(true)
-    try {
+  const { data, isLoading } = useQuery({
+    queryKey: ["clientes", page, search],
+    queryFn: async () => {
       const params = new URLSearchParams({ page: String(page) })
       if (search) params.set("search", search)
       const res = await fetch(`/api/clientes?${params}`)
       if (!res.ok) throw new Error("Erro ao carregar")
-      const json = await res.json()
-      setData(json.data)
-      setTotal(json.total)
-      setTotalPages(json.totalPages)
-    } catch (err: any) {
-      toast.error(err.message)
-    } finally {
-      setLoading(false)
-    }
-  }, [page, search])
-
-  useEffect(() => { loadData() }, [loadData])
+      return res.json()
+    },
+    placeholderData: keepPreviousData,
+  })
 
   return (
     <div className="space-y-4">
@@ -65,26 +53,32 @@ export default function ClientesPage() {
           />
         </div>
 
-        <Table
-          columns={[
-            { key: "name", header: "Nome", render: (c: Cliente) => <FormattedText>{c.name}</FormattedText> },
-            { key: "cpf", header: "CPF", render: (c: Cliente) => formatCPF(c.cpf) },
-            { key: "phone", header: "Telefone", render: (c: Cliente) => formatPhone(c.phone) },
-            { key: "email", header: "Email", render: (c: Cliente) => c.email ? <FormattedText>{c.email}</FormattedText> : "-" },
-            { key: "vehicles", header: "Veículos", render: (c: Cliente) => c.vehicles?.length ?? 0 },
-            {
-              key: "active",
-              header: "Status",
-              render: (c: Cliente) => c.active
-                ? <Badge variant="success">Ativo</Badge>
-                : <Badge variant="danger">Inativo</Badge>,
-            },
-          ]}
-          data={data}
-          onRowClick={(c) => router.push(`/clientes/${c.id}`)}
-        />
+        {isLoading ? (
+          <Loading />
+        ) : (
+          <>
+            <Table
+              columns={[
+                { key: "name", header: "Nome", render: (c: Cliente) => <FormattedText>{c.name}</FormattedText> },
+                { key: "cpf", header: "CPF", render: (c: Cliente) => formatCPF(c.cpf) },
+                { key: "phone", header: "Telefone", render: (c: Cliente) => formatPhone(c.phone) },
+                { key: "email", header: "Email", render: (c: Cliente) => c.email ? <FormattedText>{c.email}</FormattedText> : "-" },
+                { key: "vehicles", header: "Veículos", render: (c: Cliente) => c.vehicles?.length ?? 0 },
+                {
+                  key: "active",
+                  header: "Status",
+                  render: (c: Cliente) => c.active
+                    ? <Badge variant="success">Ativo</Badge>
+                    : <Badge variant="danger">Inativo</Badge>,
+                },
+              ]}
+              data={data?.data ?? []}
+              onRowClick={(c) => router.push(`/clientes/${c.id}`)}
+            />
 
-        <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+            <Pagination page={page} totalPages={data?.totalPages ?? 1} onPageChange={setPage} />
+          </>
+        )}
       </Card>
     </div>
   )

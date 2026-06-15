@@ -1,7 +1,7 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
 import { useRouter, useParams } from "next/navigation"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { Card, Button, Table, Badge, Loading, FormattedText } from "@/components/ui"
 import { ClienteForm } from "../components/ClienteForm"
 import { STATUS_OS, STATUS_OS_COLORS } from "@/lib/utils/constants"
@@ -12,49 +12,29 @@ export default function EditarClientePage() {
   const router = useRouter()
   const params = useParams()
   const id = params.id as string
+  const queryClient = useQueryClient()
 
-  const [cliente, setCliente] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [showVehicles, setShowVehicles] = useState(false)
-  const [ordens, setOrdens] = useState<any[]>([])
+  const { data: cliente, isLoading } = useQuery({
+    queryKey: ["cliente", id],
+    queryFn: async () => {
+      const res = await fetch(`/api/clientes/${id}`)
+      if (!res.ok) throw new Error("Cliente não encontrado")
+      return res.json()
+    },
+  })
 
-  useEffect(() => {
-    let mounted = true
-    async function load() {
-      try {
-        const res = await fetch(`/api/clientes/${id}`)
-        if (!res.ok) throw new Error("Cliente não encontrado")
-        const json = await res.json()
-        if (mounted) setCliente(json)
-      } catch (err: any) {
-        if (mounted) toast.error(err.message)
-        if (mounted) router.push("/clientes")
-      } finally {
-        if (mounted) setLoading(false)
-      }
-    }
-    load()
-    return () => { mounted = false }
-  }, [id, router])
+  const { data: ordens } = useQuery({
+    queryKey: ["ordens-cliente", id],
+    queryFn: async () => {
+      const res = await fetch(`/api/ordens-servico?customerId=${id}&pageSize=100`)
+      if (!res.ok) return []
+      const json = await res.json()
+      return json.data || []
+    },
+  })
 
-  useEffect(() => {
-    let mounted = true
-    async function loadOrdens() {
-      try {
-        const res = await fetch(`/api/ordens-servico?customerId=${id}&pageSize=100`)
-        if (!res.ok) return
-        const json = await res.json()
-        if (mounted) setOrdens(json.data || [])
-      } catch { }
-    }
-    loadOrdens()
-    return () => { mounted = false }
-  }, [id])
-
-  async function handleSave(data: any) {
-    setSaving(true)
-    try {
+  const saveMutation = useMutation({
+    mutationFn: async (data: any) => {
       const res = await fetch(`/api/clientes/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -64,28 +44,35 @@ export default function EditarClientePage() {
         const err = await res.json()
         throw new Error(err.error || "Erro ao salvar")
       }
+      return res.json()
+    },
+    onSuccess: () => {
       toast.success("Cliente atualizado!")
+      queryClient.invalidateQueries({ queryKey: ["cliente", id] })
+      queryClient.invalidateQueries({ queryKey: ["clientes"] })
       router.push("/clientes")
-    } catch (err: any) {
+    },
+    onError: (err: any) => {
       toast.error(err.message)
-    } finally {
-      setSaving(false)
-    }
-  }
+    },
+  })
 
-  async function handleDelete() {
-    if (!confirm("Desativar este cliente?")) return
-    try {
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
       const res = await fetch(`/api/clientes/${id}`, { method: "DELETE" })
       if (!res.ok) throw new Error("Erro ao desativar")
+    },
+    onSuccess: () => {
       toast.success("Cliente desativado")
+      queryClient.invalidateQueries({ queryKey: ["clientes"] })
       router.push("/clientes")
-    } catch (err: any) {
+    },
+    onError: (err: any) => {
       toast.error(err.message)
-    }
-  }
+    },
+  })
 
-  if (loading) return <Loading />
+  if (isLoading) return <Loading />
   if (!cliente) return null
 
   return (
@@ -93,7 +80,12 @@ export default function EditarClientePage() {
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold">Editar Cliente</h1>
         <div className="flex flex-col sm:flex-row gap-2">
-          <Button variant="danger" onClick={handleDelete} fullWidth>
+          <Button
+            variant="danger"
+            onClick={() => { if (confirm("Desativar este cliente?")) deleteMutation.mutate() }}
+            loading={deleteMutation.isPending}
+            fullWidth
+          >
             Desativar
           </Button>
         </div>
@@ -116,8 +108,8 @@ export default function EditarClientePage() {
             zipCode: cliente.zipCode || "",
             active: cliente.active,
           }}
-          onSave={handleSave}
-          loading={saving}
+          onSave={async (data) => saveMutation.mutateAsync(data)}
+          loading={saveMutation.isPending}
         />
       </Card>
 
@@ -138,7 +130,7 @@ export default function EditarClientePage() {
             },
             { key: "totalValue", header: "Valor", render: (o: any) => formatCurrency(o.totalValue) },
           ]}
-          data={ordens}
+          data={ordens ?? []}
           onRowClick={(o: any) => router.push(`/ordens-servico/${o.id}`)}
           emptyMessage="Nenhuma ordem de serviço encontrada para este cliente"
         />

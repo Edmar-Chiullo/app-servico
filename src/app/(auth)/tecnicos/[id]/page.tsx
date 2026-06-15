@@ -1,8 +1,8 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import { useRouter, useParams } from "next/navigation"
-import { Card, Loading, Button } from "@/components/ui"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { Card, Loading } from "@/components/ui"
 import { TecnicoForm } from "../components/TecnicoForm"
 import { toast } from "react-toastify"
 
@@ -10,31 +10,19 @@ export default function EditarTecnicoPage() {
   const router = useRouter()
   const params = useParams()
   const id = params.id as string
+  const queryClient = useQueryClient()
 
-  const [tecnico, setTecnico] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
+  const { data: tecnico, isLoading } = useQuery({
+    queryKey: ["tecnico", id],
+    queryFn: async () => {
+      const res = await fetch(`/api/tecnicos/${id}`)
+      if (!res.ok) throw new Error("Técnico não encontrado")
+      return res.json()
+    },
+  })
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const res = await fetch(`/api/tecnicos/${id}`)
-        if (!res.ok) throw new Error("Técnico não encontrado")
-        const json = await res.json()
-        setTecnico(json)
-      } catch (err: any) {
-        toast.error(err.message)
-        router.push("/tecnicos")
-      } finally {
-        setLoading(false)
-      }
-    }
-    load()
-  }, [id, router])
-
-  async function handleSave(data: any) {
-    setSaving(true)
-    try {
+  const saveMutation = useMutation({
+    mutationFn: async (data: any) => {
       const res = await fetch(`/api/tecnicos/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -44,16 +32,20 @@ export default function EditarTecnicoPage() {
         const err = await res.json()
         throw new Error(err.error || "Erro ao salvar")
       }
+      return res.json()
+    },
+    onSuccess: () => {
       toast.success("Técnico atualizado!")
+      queryClient.invalidateQueries({ queryKey: ["tecnico", id] })
+      queryClient.invalidateQueries({ queryKey: ["tecnicos"] })
       router.push("/tecnicos")
-    } catch (err: any) {
+    },
+    onError: (err: any) => {
       toast.error(err.message)
-    } finally {
-      setSaving(false)
-    }
-  }
+    },
+  })
 
-  if (loading) return <Loading />
+  if (isLoading) return <Loading />
   if (!tecnico) return null
 
   return (
@@ -69,8 +61,8 @@ export default function EditarTecnicoPage() {
             phone: tecnico.phone || "",
             active: tecnico.active,
           }}
-          onSave={handleSave}
-          loading={saving}
+          onSave={async (data) => saveMutation.mutateAsync(data)}
+          loading={saveMutation.isPending}
         />
       </Card>
     </div>

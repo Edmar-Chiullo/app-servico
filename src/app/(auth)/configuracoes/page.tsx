@@ -48,7 +48,7 @@ export default function ConfiguracoesPage() {
           })
         }
       })
-      .catch(() => {})
+      .catch(() => { toast.error("Erro ao carregar configurações") })
       .finally(() => { if (mounted) setLoading(false) })
     return () => { mounted = false }
   }, [])

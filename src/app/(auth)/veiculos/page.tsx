@@ -1,9 +1,9 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Card, Table, Pagination, Input, Button, FormattedText } from "@/components/ui"
-import { toast } from "react-toastify"
+import { useQuery, keepPreviousData } from "@tanstack/react-query"
+import { Card, Table, Pagination, Input, Button, FormattedText, Loading } from "@/components/ui"
 
 type Veiculo = {
   id: string
@@ -17,30 +17,20 @@ type Veiculo = {
 
 export default function VeiculosPage() {
   const router = useRouter()
-  const [data, setData] = useState<Veiculo[]>([])
   const [page, setPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
   const [search, setSearch] = useState("")
-  const [loading, setLoading] = useState(true)
 
-  const loadData = useCallback(async () => {
-    setLoading(true)
-    try {
+  const { data, isLoading } = useQuery({
+    queryKey: ["veiculos", page, search],
+    queryFn: async () => {
       const params = new URLSearchParams({ page: String(page) })
       if (search) params.set("search", search)
       const res = await fetch(`/api/veiculos?${params}`)
       if (!res.ok) throw new Error("Erro ao carregar")
-      const json = await res.json()
-      setData(json.data)
-      setTotalPages(json.totalPages)
-    } catch (err: any) {
-      toast.error(err.message)
-    } finally {
-      setLoading(false)
-    }
-  }, [page, search])
-
-  useEffect(() => { loadData() }, [loadData])
+      return res.json()
+    },
+    placeholderData: keepPreviousData,
+  })
 
   return (
     <div className="space-y-4">
@@ -57,19 +47,25 @@ export default function VeiculosPage() {
             onChange={(e) => { setSearch(e.target.value); setPage(1) }}
           />
         </div>
-        <Table
-          columns={[
-            { key: "plate", header: "Placa" },
-            { key: "model", header: "Modelo", render: (v: Veiculo) => <FormattedText>{v.model}</FormattedText> },
-            { key: "brand", header: "Marca", render: (v: Veiculo) => v.brand ? <FormattedText>{v.brand}</FormattedText> : "-" },
-            { key: "color", header: "Cor", render: (v: Veiculo) => <FormattedText>{v.color}</FormattedText> },
-            { key: "year", header: "Ano", render: (v: Veiculo) => v.year || "-" },
-            { key: "customer", header: "Cliente", render: (v: Veiculo) => <FormattedText>{v.customer?.name}</FormattedText> },
-          ]}
-          data={data}
-          onRowClick={(v) => router.push(`/veiculos/${v.id}`)}
-        />
-        <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+        {isLoading ? (
+          <Loading />
+        ) : (
+          <>
+            <Table
+              columns={[
+                { key: "plate", header: "Placa" },
+                { key: "model", header: "Modelo", render: (v: Veiculo) => <FormattedText>{v.model}</FormattedText> },
+                { key: "brand", header: "Marca", render: (v: Veiculo) => v.brand ? <FormattedText>{v.brand}</FormattedText> : "-" },
+                { key: "color", header: "Cor", render: (v: Veiculo) => <FormattedText>{v.color}</FormattedText> },
+                { key: "year", header: "Ano", render: (v: Veiculo) => v.year || "-" },
+                { key: "customer", header: "Cliente", render: (v: Veiculo) => <FormattedText>{v.customer?.name}</FormattedText> },
+              ]}
+              data={data?.data ?? []}
+              onRowClick={(v) => router.push(`/veiculos/${v.id}`)}
+            />
+            <Pagination page={page} totalPages={data?.totalPages ?? 1} onPageChange={setPage} />
+          </>
+        )}
       </Card>
     </div>
   )

@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { Card, Button, Badge, Loading, Input, Combobox, Modal, FormattedText, BarcodeScanner } from "@/components/ui"
+import type { OSDetailData } from "@/types"
 import type { ComboboxItem } from "@/components/ui/Combobox"
 import { STATUS_OS, STATUS_OS_COLORS, ALLOWED_STATUS_TRANSITIONS } from "@/lib/utils/constants"
 import { formatDate, formatDateTime, formatCurrency } from "@/lib/utils/format"
@@ -16,8 +17,9 @@ export default function OSDetailPage() {
   const params = useParams()
   const id = params.id as string
 
-  const [os, setOs] = useState<any>(null)
+  const [os, setOs] = useState<OSDetailData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [fetching, setFetching] = useState(false)
   const [showComplete, setShowComplete] = useState(false)
   const [products, setProducts] = useState<ProductItem[]>([])
   const [concludeForm, setConcludeForm] = useState({ diagnostic: "", executedService: "", laborValue: "0" })
@@ -25,14 +27,23 @@ export default function OSDetailPage() {
   const [showScanner, setShowScanner] = useState(false)
   const [scannerIndex, setScannerIndex] = useState(0)
 
+  async function loadOS() {
+    setFetching(true)
+    try {
+      const res = await fetch(`/api/ordens-servico/${id}`)
+      if (!res.ok) throw new Error("Erro ao carregar dados")
+      const data = await res.json()
+      setOs(data)
+    } catch (err: any) {
+      toast.error(err.message)
+    } finally {
+      setFetching(false)
+      setLoading(false)
+    }
+  }
+
   useEffect(() => {
-    let mounted = true
-    fetch(`/api/ordens-servico/${id}`)
-      .then((r) => r.json())
-      .then((data) => { if (mounted) setOs(data) })
-      .catch(() => { if (mounted) toast.error("Erro ao carregar dados") })
-      .finally(() => { if (mounted) setLoading(false) })
-    return () => { mounted = false }
+    loadOS()
   }, [id])
 
   async function handleStatusChange(newStatus: string) {
@@ -47,7 +58,7 @@ export default function OSDetailPage() {
         throw new Error(err.error || "Erro ao atualizar status")
       }
       toast.success("Status atualizado!")
-      window.location.reload()
+      loadOS()
     } catch (err: any) {
       toast.error(err.message)
     }
@@ -160,7 +171,9 @@ export default function OSDetailPage() {
       }
       toast.success("OS concluída com sucesso!")
       setShowComplete(false)
-      window.location.reload()
+      setProducts([])
+      setConcludeForm({ diagnostic: "", executedService: "", laborValue: "0" })
+      loadOS()
     } catch (err: any) {
       toast.error(err.message)
     } finally {

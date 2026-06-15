@@ -1,7 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Button, Input, Select } from "@/components/ui"
+import { Button, Input, Select, Combobox } from "@/components/ui"
+import type { ComboboxItem } from "@/components/ui/Combobox"
 import { toast } from "react-toastify"
 
 type OSFormData = {
@@ -28,21 +29,21 @@ export function OSForm({ onSave, loading }: Props) {
     notes: "",
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
-  const [customers, setCustomers] = useState<{ value: string; label: string }[]>([])
   const [vehicles, setVehicles] = useState<{ value: string; label: string }[]>([])
-  const [technicians, setTechnicians] = useState<{ value: string; label: string }[]>([])
+  const [selectedCustomerLabel, setSelectedCustomerLabel] = useState("")
+  const [selectedTechnicianLabel, setSelectedTechnicianLabel] = useState("")
 
-  useEffect(() => {
-    Promise.all([
-      fetch("/api/clientes?pageSize=1000").then((r) => r.json()),
-      fetch("/api/tecnicos?pageSize=1000").then((r) => r.json()),
-    ])
-      .then(([c, t]) => {
-        setCustomers(c.data.map((x: any) => ({ value: x.id, label: `${x.name} - ${x.cpf}` })))
-        setTechnicians(t.data.map((x: any) => ({ value: x.id, label: x.name })))
-      })
-      .catch(() => toast.error("Erro ao carregar dados"))
-  }, [])
+  async function fetchCustomers(search: string): Promise<ComboboxItem[]> {
+    const res = await fetch(`/api/clientes?search=${encodeURIComponent(search)}&pageSize=20&includeInactive=false`)
+    const json = await res.json()
+    return json.data.map((c: any) => ({ value: c.id, label: `${c.name} - ${c.cpf}` }))
+  }
+
+  async function fetchTechnicians(search: string): Promise<ComboboxItem[]> {
+    const res = await fetch(`/api/tecnicos?search=${encodeURIComponent(search)}&pageSize=20&includeInactive=false`)
+    const json = await res.json()
+    return json.data.map((t: any) => ({ value: t.id, label: t.name }))
+  }
 
   useEffect(() => {
     if (form.customerId) {
@@ -82,14 +83,19 @@ export function OSForm({ onSave, loading }: Props) {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Select
-          label="Cliente *"
-          value={form.customerId}
-          onChange={(e) => setField("customerId", e.target.value)}
-          options={customers}
-          placeholder="Selecione um cliente"
-          error={errors.customerId}
-        />
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Cliente *</label>
+          <Combobox
+            placeholder="Buscar cliente por nome ou CPF..."
+            value={selectedCustomerLabel}
+            onSelect={(item) => {
+              setField("customerId", item.value)
+              setSelectedCustomerLabel(item.label)
+            }}
+            fetchItems={fetchCustomers}
+          />
+          {errors.customerId && <p className="text-xs text-red-500 mt-1">{errors.customerId}</p>}
+        </div>
         <Select
           label="Veículo *"
           value={form.vehicleId}
@@ -99,14 +105,19 @@ export function OSForm({ onSave, loading }: Props) {
           error={errors.vehicleId}
           disabled={!form.customerId}
         />
-        <Select
-          label="Técnico *"
-          value={form.technicianId}
-          onChange={(e) => setField("technicianId", e.target.value)}
-          options={technicians}
-          placeholder="Selecione um técnico"
-          error={errors.technicianId}
-        />
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Técnico *</label>
+          <Combobox
+            placeholder="Buscar técnico..."
+            value={selectedTechnicianLabel}
+            onSelect={(item) => {
+              setField("technicianId", item.value)
+              setSelectedTechnicianLabel(item.label)
+            }}
+            fetchItems={fetchTechnicians}
+          />
+          {errors.technicianId && <p className="text-xs text-red-500 mt-1">{errors.technicianId}</p>}
+        </div>
         <Select
           label="Prioridade"
           value={form.priority}

@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { Card, Button, Input, Select, FormattedText } from "@/components/ui"
 import { toast } from "react-toastify"
+import type { RelatorioData } from "@/types"
 import {
   Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend,
 } from "chart.js"
@@ -16,7 +17,7 @@ export default function RelatoriosGerenciaisPage() {
     dateTo: "",
     status: "",
   })
-  const [data, setData] = useState<any>(null)
+  const [data, setData] = useState<RelatorioData | null>(null)
   const [loading, setLoading] = useState(false)
 
   async function loadReport() {

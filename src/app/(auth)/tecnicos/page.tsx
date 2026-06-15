@@ -1,9 +1,9 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Card, Table, Pagination, Input, Button, Badge, FormattedText } from "@/components/ui"
-import { toast } from "react-toastify"
+import { useQuery, keepPreviousData } from "@tanstack/react-query"
+import { Card, Table, Pagination, Input, Button, Badge, FormattedText, Loading } from "@/components/ui"
 
 type Tecnico = {
   id: string
@@ -16,30 +16,20 @@ type Tecnico = {
 
 export default function TecnicosPage() {
   const router = useRouter()
-  const [data, setData] = useState<Tecnico[]>([])
   const [page, setPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
   const [search, setSearch] = useState("")
-  const [loading, setLoading] = useState(true)
 
-  const loadData = useCallback(async () => {
-    setLoading(true)
-    try {
+  const { data, isLoading } = useQuery({
+    queryKey: ["tecnicos", page, search],
+    queryFn: async () => {
       const params = new URLSearchParams({ page: String(page) })
       if (search) params.set("search", search)
       const res = await fetch(`/api/tecnicos?${params}`)
       if (!res.ok) throw new Error("Erro ao carregar")
-      const json = await res.json()
-      setData(json.data)
-      setTotalPages(json.totalPages)
-    } catch (err: any) {
-      toast.error(err.message)
-    } finally {
-      setLoading(false)
-    }
-  }, [page, search])
-
-  useEffect(() => { loadData() }, [loadData])
+      return res.json()
+    },
+    placeholderData: keepPreviousData,
+  })
 
   return (
     <div className="space-y-4">
@@ -56,24 +46,30 @@ export default function TecnicosPage() {
             onChange={(e) => { setSearch(e.target.value); setPage(1) }}
           />
         </div>
-        <Table
-          columns={[
-            { key: "name", header: "Nome", render: (t: Tecnico) => <FormattedText>{t.name}</FormattedText> },
-            { key: "cpf", header: "CPF" },
-            { key: "role", header: "Cargo", render: (t: Tecnico) => <FormattedText>{t.role}</FormattedText> },
-            { key: "phone", header: "Telefone", render: (t: Tecnico) => t.phone || "-" },
-            {
-              key: "active",
-              header: "Status",
-              render: (t: Tecnico) => t.active
-                ? <Badge variant="success">Ativo</Badge>
-                : <Badge variant="danger">Inativo</Badge>,
-            },
-          ]}
-          data={data}
-          onRowClick={(t) => router.push(`/tecnicos/${t.id}`)}
-        />
-        <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+        {isLoading ? (
+          <Loading />
+        ) : (
+          <>
+            <Table
+              columns={[
+                { key: "name", header: "Nome", render: (t: Tecnico) => <FormattedText>{t.name}</FormattedText> },
+                { key: "cpf", header: "CPF" },
+                { key: "role", header: "Cargo", render: (t: Tecnico) => <FormattedText>{t.role}</FormattedText> },
+                { key: "phone", header: "Telefone", render: (t: Tecnico) => t.phone || "-" },
+                {
+                  key: "active",
+                  header: "Status",
+                  render: (t: Tecnico) => t.active
+                    ? <Badge variant="success">Ativo</Badge>
+                    : <Badge variant="danger">Inativo</Badge>,
+                },
+              ]}
+              data={data?.data ?? []}
+              onRowClick={(t) => router.push(`/tecnicos/${t.id}`)}
+            />
+            <Pagination page={page} totalPages={data?.totalPages ?? 1} onPageChange={setPage} />
+          </>
+        )}
       </Card>
     </div>
   )

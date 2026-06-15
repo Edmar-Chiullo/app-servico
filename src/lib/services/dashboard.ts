@@ -1,5 +1,4 @@
 import { prisma } from "../prisma"
-import { Prisma } from "@prisma/client"
 import { getBrazilDayRange, getBrazilWeekRange, getBrazilMonthRange } from "@/lib/utils/date"
 
 export async function getDashboardData() {
@@ -7,78 +6,63 @@ export async function getDashboardData() {
   const { startOfWeek } = getBrazilWeekRange()
   const { startOfMonth } = getBrazilMonthRange()
 
-  const [
-    servicesToday,
-    servicesOpen,
-    servicesInProgress,
-    servicesWaitingParts,
-    servicesCompleted,
-    servicesCancelled,
-    dailyRevenue,
-    weeklyRevenue,
-    monthlyRevenue,
-    totalCustomers,
-    lowStockProducts,
-    technicianProductivity,
-  ] = await Promise.all([
-    prisma.serviceOrder.count({
-      where: { openingDate: { gte: startOfDay } },
-    }),
-    prisma.serviceOrder.count({
-      where: { status: "OPEN" },
-    }),
-    prisma.serviceOrder.count({
-      where: { status: "IN_PROGRESS" },
-    }),
-    prisma.serviceOrder.count({
-      where: { status: "WAITING_PARTS" },
-    }),
-    prisma.serviceOrder.count({
-      where: { status: "COMPLETED" },
-    }),
-    prisma.serviceOrder.count({
-      where: { status: "CANCELLED" },
-    }),
-    prisma.financialEntry.aggregate({
-      _sum: { value: true },
-      where: { date: { gte: startOfDay, lt: endOfDay } },
-    }),
-    prisma.financialEntry.aggregate({
-      _sum: { value: true },
-      where: { date: { gte: startOfWeek } },
-    }),
-    prisma.financialEntry.aggregate({
-      _sum: { value: true },
-      where: { date: { gte: startOfMonth } },
-    }),
-    prisma.customer.count({
-      where: { active: true },
-    }),
-    prisma.$queryRaw`
-      SELECT COUNT(*)::int as count FROM products 
-      WHERE active = true AND "stockQuantity" <= "stockMin"
-    `.then((r: any) => Number(r[0]?.count ?? 0)),
-    prisma.technician.findMany({
-      where: { active: true },
-      include: {
-        serviceOrders: {
-          where: {
-            status: "COMPLETED",
-            completionDate: { gte: startOfMonth },
+  const [statusCounts, financial, totalCustomers, lowStockProducts, technicianProductivity] =
+    await Promise.all([
+      prisma.serviceOrder.groupBy({
+        by: ["status"],
+        _count: { status: true },
+      }),
+
+      prisma.$queryRaw<{ period: string; total: number }[]>`
+        SELECT period, COALESCE(SUM(value), 0) as total
+        FROM (
+          SELECT 'daily' as period, value FROM financial_entries WHERE date >= ${startOfDay} AND date < ${endOfDay}
+          UNION ALL
+          SELECT 'weekly' as period, value FROM financial_entries WHERE date >= ${startOfWeek}
+          UNION ALL
+          SELECT 'monthly' as period, value FROM financial_entries WHERE date >= ${startOfMonth}
+        ) sub
+        GROUP BY period
+      `,
+
+      prisma.customer.count({ where: { active: true } }),
+
+      prisma.$queryRaw<{ count: number }[]>`
+        SELECT COUNT(*)::int as count FROM products 
+        WHERE active = true AND "stockQuantity" <= "stockMin"
+      `.then((r) => Number(r[0]?.count ?? 0)),
+
+      prisma.technician.findMany({
+        where: { active: true },
+        include: {
+          serviceOrders: {
+            where: { status: "COMPLETED", completionDate: { gte: startOfMonth } },
+            select: { totalValue: true, openingDate: true, completionDate: true },
           },
-          select: { totalValue: true, laborValue: true, openingDate: true, completionDate: true },
         },
-      },
-    }),
-  ])
+      }),
+    ])
+
+  const today = await prisma.serviceOrder.count({
+    where: { openingDate: { gte: startOfDay } },
+  })
+
+  const financialByPeriod: Record<string, number> = {}
+  for (const row of financial) {
+    financialByPeriod[row.period] = Number(row.total)
+  }
+
+  function getStatusCount(status: string): number {
+    return statusCounts.find((s) => s.status === status)?._count.status ?? 0
+  }
 
   const productivity = technicianProductivity.map((tech) => {
-    const completedCount = tech.serviceOrders.length
-    const totalValue = tech.serviceOrders.reduce((sum, os) => sum + Number(os.totalValue), 0)
-    const totalTimeHours = tech.serviceOrders.reduce((sum, os) => {
+    const orders = tech.serviceOrders
+    const completedCount = orders.length
+    const totalValue = orders.reduce((sum, os) => sum + Number(os.totalValue), 0)
+    const totalTimeHours = orders.reduce((sum, os) => {
       if (os.completionDate) {
-        const diff = os.completionDate.getTime() - os.openingDate.getTime()
-        return sum + diff / (1000 * 60 * 60)
+        return sum + (os.completionDate.getTime() - os.openingDate.getTime()) / (1000 * 60 * 60)
       }
       return sum
     }, 0)
@@ -93,15 +77,15 @@ export async function getDashboardData() {
   })
 
   return {
-    servicesToday,
-    servicesOpen,
-    servicesInProgress,
-    servicesWaitingParts,
-    servicesCompleted,
-    servicesCancelled,
-    dailyRevenue: Number(dailyRevenue._sum.value ?? 0),
-    weeklyRevenue: Number(weeklyRevenue._sum.value ?? 0),
-    monthlyRevenue: Number(monthlyRevenue._sum.value ?? 0),
+    servicesToday: today,
+    servicesOpen: getStatusCount("OPEN"),
+    servicesInProgress: getStatusCount("IN_PROGRESS"),
+    servicesWaitingParts: getStatusCount("WAITING_PARTS"),
+    servicesCompleted: getStatusCount("COMPLETED"),
+    servicesCancelled: getStatusCount("CANCELLED"),
+    dailyRevenue: financialByPeriod.daily ?? 0,
+    weeklyRevenue: financialByPeriod.weekly ?? 0,
+    monthlyRevenue: financialByPeriod.monthly ?? 0,
     totalCustomers,
     lowStockProducts,
     technicianProductivity: productivity,

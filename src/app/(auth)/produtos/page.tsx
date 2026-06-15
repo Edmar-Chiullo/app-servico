@@ -1,10 +1,10 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Card, Table, Pagination, Input, Button, Badge, FormattedText } from "@/components/ui"
+import { useQuery, keepPreviousData } from "@tanstack/react-query"
+import { Card, Table, Pagination, Input, Button, Badge, FormattedText, Loading } from "@/components/ui"
 import { formatCurrency } from "@/lib/utils/format"
-import { toast } from "react-toastify"
 
 type Produto = {
   id: string
@@ -22,32 +22,22 @@ type Produto = {
 
 export default function ProdutosPage() {
   const router = useRouter()
-  const [data, setData] = useState<Produto[]>([])
   const [page, setPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
   const [search, setSearch] = useState("")
   const [lowStock, setLowStock] = useState(false)
-  const [loading, setLoading] = useState(true)
 
-  const loadData = useCallback(async () => {
-    setLoading(true)
-    try {
+  const { data, isLoading } = useQuery({
+    queryKey: ["produtos", page, search, lowStock],
+    queryFn: async () => {
       const params = new URLSearchParams({ page: String(page) })
       if (search) params.set("search", search)
       if (lowStock) params.set("lowStock", "true")
       const res = await fetch(`/api/produtos?${params}`)
       if (!res.ok) throw new Error("Erro ao carregar")
-      const json = await res.json()
-      setData(json.data)
-      setTotalPages(json.totalPages)
-    } catch (err: any) {
-      toast.error(err.message)
-    } finally {
-      setLoading(false)
-    }
-  }, [page, search, lowStock])
-
-  useEffect(() => { loadData() }, [loadData])
+      return res.json()
+    },
+    placeholderData: keepPreviousData,
+  })
 
   return (
     <div className="space-y-4">
@@ -87,7 +77,7 @@ export default function ProdutosPage() {
             size="sm"
             variant="secondary"
             onClick={() => window.open("/api/produtos/export/xlsx")}
-            disabled={data.length === 0}
+            disabled={!data?.data?.length}
           >
             Exportar XLSX
           </Button>
@@ -95,36 +85,42 @@ export default function ProdutosPage() {
             size="sm"
             variant="secondary"
             onClick={() => window.open("/api/produtos/export/pdf")}
-            disabled={data.length === 0}
+            disabled={!data?.data?.length}
           >
             Exportar PDF
           </Button>
         </div>
-        <Table
-          columns={[
-            { key: "code", header: "Código" },
-            { key: "description", header: "Descrição", render: (p: Produto) => <FormattedText>{p.description}</FormattedText> },
-            { key: "category", header: "Categoria", render: (p: Produto) => p.category ? <FormattedText>{p.category}</FormattedText> : "-" },
-            { key: "stockQuantity", header: "Estoque",
-              render: (p: Produto) => (
-                <span className={p.stockQuantity <= p.stockMin ? "text-red-600 font-bold" : ""}>
-                  {p.stockQuantity} {p.unit}
-                </span>
-              ),
-            },
-            { key: "salePrice", header: "Venda", render: (p: Produto) => formatCurrency(p.salePrice) },
-            {
-              key: "active",
-              header: "Status",
-              render: (p: Produto) => p.active
-                ? <Badge variant="success">Ativo</Badge>
-                : <Badge variant="danger">Inativo</Badge>,
-            },
-          ]}
-          data={data}
-          onRowClick={(p) => router.push(`/produtos/${p.id}`)}
-        />
-        <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+        {isLoading ? (
+          <Loading />
+        ) : (
+          <>
+            <Table
+              columns={[
+                { key: "code", header: "Código" },
+                { key: "description", header: "Descrição", render: (p: Produto) => <FormattedText>{p.description}</FormattedText> },
+                { key: "category", header: "Categoria", render: (p: Produto) => p.category ? <FormattedText>{p.category}</FormattedText> : "-" },
+                { key: "stockQuantity", header: "Estoque",
+                  render: (p: Produto) => (
+                    <span className={p.stockQuantity <= p.stockMin ? "text-red-600 font-bold" : ""}>
+                      {p.stockQuantity} {p.unit}
+                    </span>
+                  ),
+                },
+                { key: "salePrice", header: "Venda", render: (p: Produto) => formatCurrency(p.salePrice) },
+                {
+                  key: "active",
+                  header: "Status",
+                  render: (p: Produto) => p.active
+                    ? <Badge variant="success">Ativo</Badge>
+                    : <Badge variant="danger">Inativo</Badge>,
+                },
+              ]}
+              data={data?.data ?? []}
+              onRowClick={(p) => router.push(`/produtos/${p.id}`)}
+            />
+            <Pagination page={page} totalPages={data?.totalPages ?? 1} onPageChange={setPage} />
+          </>
+        )}
       </Card>
     </div>
   )

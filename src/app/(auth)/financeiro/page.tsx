@@ -5,10 +5,11 @@ import { useRouter } from "next/navigation"
 import { Card, Button, Loading } from "@/components/ui"
 import { formatCurrency, formatDate } from "@/lib/utils/format"
 import { toast } from "react-toastify"
+import type { FinanceiroData, FinanceiroEntry, FinanceiroExit } from "@/types"
 
 export default function FinanceiroPage() {
   const router = useRouter()
-  const [data, setData] = useState<any>(null)
+  const [data, setData] = useState<FinanceiroData | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -60,7 +61,7 @@ export default function FinanceiroPage() {
             <p className="text-sm text-gray-500">Nenhuma entrada</p>
           ) : (
             <div className="space-y-2">
-              {data.entries?.map((e: any) => (
+              {data.entries?.map((e: FinanceiroEntry) => (
                 <div key={e.id} className="flex justify-between text-sm">
                   <span>OS #{e.serviceOrder?.number} - {e.serviceOrder?.customer?.name}</span>
                   <span className="text-green-600 font-medium">{formatCurrency(e.value)}</span>
@@ -77,7 +78,7 @@ export default function FinanceiroPage() {
             <p className="text-sm text-gray-500">Nenhuma saída</p>
           ) : (
             <div className="space-y-2">
-              {data.exits?.map((e: any) => (
+              {data.exits?.map((e: FinanceiroExit) => (
                 <div key={e.id} className="flex justify-between text-sm">
                   <div>
                     <span>{e.description}</span>

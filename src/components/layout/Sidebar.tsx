@@ -35,7 +35,7 @@ const iconMap: Record<string, React.ElementType> = {
 }
 
 const menuItems = [
-  { href: "/", label: "Dashboard", icon: "LayoutDashboard", roles: ["ADMIN", "MANAGER", "ATTENDANT", "TECHNICIAN"] },
+  { href: "/", label: "Dashboard", icon: "LayoutDashboard", roles: ["ADMIN", "MANAGER"] },
   { href: "/clientes", label: "Clientes", icon: "Users", roles: ["ADMIN", "MANAGER", "ATTENDANT"] },
   { href: "/veiculos", label: "Veículos", icon: "Car", roles: ["ADMIN", "MANAGER", "ATTENDANT"] },
   { href: "/tecnicos", label: "Técnicos", icon: "Wrench", roles: ["ADMIN", "MANAGER"] },

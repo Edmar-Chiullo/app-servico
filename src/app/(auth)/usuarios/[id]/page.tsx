@@ -1,7 +1,7 @@
 "use client"
 
-import { useEffect, useState } from "react"
 import { useRouter, useParams } from "next/navigation"
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { Card, Loading } from "@/components/ui"
 import { UsuarioForm } from "../components/UsuarioForm"
 import { toast } from "react-toastify"
@@ -10,31 +10,19 @@ export default function EditarUsuarioPage() {
   const router = useRouter()
   const params = useParams()
   const id = params.id as string
+  const queryClient = useQueryClient()
 
-  const [usuario, setUsuario] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
+  const { data: usuario, isLoading } = useQuery({
+    queryKey: ["usuario", id],
+    queryFn: async () => {
+      const res = await fetch(`/api/usuarios/${id}`)
+      if (!res.ok) throw new Error("Usuário não encontrado")
+      return res.json()
+    },
+  })
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const res = await fetch(`/api/usuarios/${id}`)
-        if (!res.ok) throw new Error("Usuário não encontrado")
-        const json = await res.json()
-        setUsuario(json)
-      } catch (err: any) {
-        toast.error(err.message)
-        router.push("/usuarios")
-      } finally {
-        setLoading(false)
-      }
-    }
-    load()
-  }, [id, router])
-
-  async function handleSave(data: any) {
-    setSaving(true)
-    try {
+  const saveMutation = useMutation({
+    mutationFn: async (data: any) => {
       const res = await fetch(`/api/usuarios/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -42,18 +30,26 @@ export default function EditarUsuarioPage() {
       })
       if (!res.ok) {
         const err = await res.json()
-        throw new Error(err.error?.fieldErrors ? Object.values(err.error.fieldErrors).flat()[0] : err.error || "Erro ao salvar")
+        throw new Error(
+          err.error?.fieldErrors
+            ? Object.values(err.error.fieldErrors).flat()[0] as string
+            : err.error || "Erro ao salvar"
+        )
       }
+      return res.json()
+    },
+    onSuccess: () => {
       toast.success("Usuário atualizado!")
+      queryClient.invalidateQueries({ queryKey: ["usuario", id] })
+      queryClient.invalidateQueries({ queryKey: ["usuarios"] })
       router.push("/usuarios")
-    } catch (err: any) {
+    },
+    onError: (err: any) => {
       toast.error(err.message)
-    } finally {
-      setSaving(false)
-    }
-  }
+    },
+  })
 
-  if (loading) return <Loading />
+  if (isLoading) return <Loading />
   if (!usuario) return null
 
   return (
@@ -69,8 +65,8 @@ export default function EditarUsuarioPage() {
             role: usuario.role,
             active: usuario.active,
           }}
-          onSave={handleSave}
-          loading={saving}
+          onSave={async (data) => saveMutation.mutateAsync(data)}
+          loading={saveMutation.isPending}
         />
       </Card>
     </div>

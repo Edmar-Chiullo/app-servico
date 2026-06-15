@@ -1,8 +1,8 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
+import { useQuery } from "@tanstack/react-query"
 import { Card, Loading } from "@/components/ui"
-import { DashboardData } from "@/types"
+import type { DashboardData } from "@/types"
 import { formatCurrency } from "@/lib/utils/format"
 import {
   Chart as ChartJS,
@@ -15,39 +15,23 @@ import {
   ArcElement,
 } from "chart.js"
 import { Bar, Doughnut } from "react-chartjs-2"
-import { toast } from "react-toastify"
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement)
 
+async function fetchDashboard(): Promise<DashboardData> {
+  const res = await fetch("/api/dashboard")
+  if (!res.ok) throw new Error("Erro ao carregar dashboard")
+  return res.json()
+}
+
 export default function DashboardPage() {
-  const [data, setData] = useState<DashboardData | null>(null)
-  const [loading, setLoading] = useState(true)
-  const mountedRef = useRef(true)
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: ["dashboard"],
+    queryFn: fetchDashboard,
+    refetchInterval: 5 * 60 * 1000,
+  })
 
-  async function loadData() {
-    try {
-      const res = await fetch("/api/dashboard")
-      if (!res.ok) throw new Error("Erro ao carregar dashboard")
-      const json = await res.json()
-      if (mountedRef.current) setData(json)
-    } catch (err: any) {
-      if (mountedRef.current) toast.error(err.message)
-    } finally {
-      if (mountedRef.current) setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    mountedRef.current = true
-    loadData()
-    const interval = setInterval(loadData, 5 * 60 * 1000)
-    return () => {
-      mountedRef.current = false
-      clearInterval(interval)
-    }
-  }, [])
-
-  if (loading) return <Loading text="Carregando dashboard..." />
+  if (isLoading) return <Loading text="Carregando dashboard..." />
   if (!data) return <p className="text-red-500">Erro ao carregar dados</p>
 
   const statusChartData = {
@@ -73,7 +57,7 @@ export default function DashboardPage() {
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
         <button
-          onClick={() => { setLoading(true); loadData() }}
+          onClick={() => refetch()}
           className="w-full sm:w-auto px-3 py-1.5 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700"
         >
           Atualizar
