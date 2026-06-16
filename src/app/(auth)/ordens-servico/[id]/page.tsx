@@ -210,7 +210,7 @@ export default function OSDetailPage() {
         <Card title="Informações">
           <dl className="space-y-3 text-sm">
             <div className="flex justify-between"><dt className="text-gray-500">Cliente:</dt><dd><FormattedText>{os.customer?.name}</FormattedText></dd></div>
-            <div className="flex justify-between"><dt className="text-gray-500">CPF:</dt><dd>{os.customer?.cpf}</dd></div>
+            <div className="flex justify-between"><dt className="text-gray-500">CPF:</dt><dd>{os.customer?.cpf || "-"}</dd></div>
             <div className="flex justify-between"><dt className="text-gray-500">Veículo:</dt><dd><FormattedText>{os.vehicle?.brand}</FormattedText> <FormattedText>{os.vehicle?.model}</FormattedText> - {os.vehicle?.plate}</dd></div>
             <div className="flex justify-between"><dt className="text-gray-500">Técnico:</dt><dd><FormattedText>{os.technician?.name}</FormattedText></dd></div>
             <div className="flex justify-between"><dt className="text-gray-500">Abertura:</dt><dd>{formatDateTime(os.openingDate)}</dd></div>

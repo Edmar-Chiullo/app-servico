@@ -3,15 +3,15 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useQuery, keepPreviousData } from "@tanstack/react-query"
-import { Card, Table, Pagination, Input, Button, Badge, FormattedText, Loading } from "@/components/ui"
+import { Card, Table, Pagination, Input, Badge, FormattedText, Loading } from "@/components/ui"
 import { formatCPF } from "@/lib/utils/cpf"
 import { formatPhone } from "@/lib/utils/phone"
 
 type Cliente = {
   id: string
   name: string
-  cpf: string
-  phone: string
+  cpf: string | null
+  phone: string | null
   email: string | null
   active: boolean
   createdAt: string
@@ -37,11 +37,8 @@ export default function ClientesPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Clientes</h1>
-        <Button onClick={() => router.push("/clientes/novo")} fullWidth>
-          Novo Cliente
-        </Button>
       </div>
 
       <Card>
@@ -60,8 +57,8 @@ export default function ClientesPage() {
             <Table
               columns={[
                 { key: "name", header: "Nome", render: (c: Cliente) => <FormattedText>{c.name}</FormattedText> },
-                { key: "cpf", header: "CPF", render: (c: Cliente) => formatCPF(c.cpf) },
-                { key: "phone", header: "Telefone", render: (c: Cliente) => formatPhone(c.phone) },
+                { key: "cpf", header: "CPF", render: (c: Cliente) => c.cpf ? formatCPF(c.cpf) : "-" },
+                { key: "phone", header: "Telefone", render: (c: Cliente) => c.phone ? formatPhone(c.phone) : "-" },
                 { key: "email", header: "Email", render: (c: Cliente) => c.email ? <FormattedText>{c.email}</FormattedText> : "-" },
                 { key: "vehicles", header: "Veículos", render: (c: Cliente) => c.vehicles?.length ?? 0 },
                 {

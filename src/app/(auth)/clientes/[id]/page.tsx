@@ -136,11 +136,7 @@ export default function EditarClientePage() {
         />
       </Card>
 
-      <Card title="Veículos" action={
-        <Button size="sm" onClick={() => router.push(`/veiculos/novo?customerId=${id}`)}>
-          Novo Veículo
-        </Button>
-      }>
+      <Card title="Veículos">
         <Table
           columns={[
             { key: "plate", header: "Placa" },

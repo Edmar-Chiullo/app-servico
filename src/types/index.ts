@@ -31,8 +31,8 @@ export type DashboardData = {
 export type ClienteWithVehicles = {
   id: string
   name: string
-  cpf: string
-  phone: string
+  cpf: string | null
+  phone: string | null
   email: string | null
   active: boolean
   street: string | null
@@ -56,7 +56,7 @@ export type ServiceOrderWithRelations = {
   laborValue: number
   materialsValue: number
   totalValue: number
-  customer: { id: string; name: string; cpf: string }
+  customer: { id: string; name: string; cpf: string | null }
   vehicle: { id: string; plate: string; model: string; brand: string | null }
   technician: { id: string; name: string }
   products: {
@@ -88,7 +88,7 @@ export type OSDetailData = {
   notes: string | null
   openingDate: string
   completionDate: string | null
-  customer: { id: string; name: string; cpf: string } & Record<string, any>
+  customer: { id: string; name: string; cpf: string | null } & Record<string, any>
   vehicle: { id: string; plate: string; model: string; brand: string | null; color?: string; year?: number | null }
   technician: { id: string; name: string }
   serviceOrderProducts: {

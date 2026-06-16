@@ -22,7 +22,6 @@ describe("clienteSchema", () => {
 
   it("rejects missing name", () => {
     const result = clienteSchema.safeParse({
-      cpf: "52998224725",
       phone: "+5511987654321",
     })
     expect(result.success).toBe(false)
@@ -31,29 +30,24 @@ describe("clienteSchema", () => {
     }
   })
 
-  it("rejects invalid CPF format", () => {
-    const result = clienteSchema.safeParse({
-      name: "João",
-      cpf: "123",
-      phone: "+5511987654321",
-    })
-    expect(result.success).toBe(false)
-  })
-
-  it("rejects phone without +55", () => {
-    const result = clienteSchema.safeParse({
-      name: "João",
-      cpf: "52998224725",
-      phone: "11987654321",
-    })
-    expect(result.success).toBe(false)
-  })
-
-  it("accepts minimal valid data", () => {
+  it("accepts data without CPF", () => {
     const result = clienteSchema.safeParse({
       name: "João Silva",
-      cpf: "52998224725",
       phone: "+5511987654321",
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it("accepts data without phone", () => {
+    const result = clienteSchema.safeParse({
+      name: "João Silva",
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it("accepts minimal data (name only)", () => {
+    const result = clienteSchema.safeParse({
+      name: "João Silva",
     })
     expect(result.success).toBe(true)
   })
@@ -61,8 +55,6 @@ describe("clienteSchema", () => {
   it("defaults active to true", () => {
     const result = clienteSchema.parse({
       name: "João",
-      cpf: "52998224725",
-      phone: "+5511987654321",
     })
     expect(result.active).toBe(true)
   })

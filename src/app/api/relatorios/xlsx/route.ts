@@ -21,8 +21,8 @@ export async function GET(req: NextRequest) {
 
   const rows = data.ordens.map((o) => ({
     "Nº OS": o.number,
-    "Cliente": toTitleCase(o.customer.name),
-    "CPF": o.customer.cpf,
+    "Cliente": toTitleCase(o.customer?.name || ""),
+    "CPF": o.customer?.cpf || "",
     "Veículo": `${toTitleCase(o.vehicle.brand || "")} ${toTitleCase(o.vehicle.model)} - ${o.vehicle.plate}`,
     "Técnico": toTitleCase(o.technician.name),
     "Status": o.status,

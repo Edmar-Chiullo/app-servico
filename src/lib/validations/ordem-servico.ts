@@ -1,8 +1,10 @@
 import { z } from "zod"
 
 export const ordemServicoSchema = z.object({
-  customerId: z.string().min(1, "Cliente é obrigatório"),
-  vehicleId: z.string().min(1, "Veículo é obrigatório"),
+  customerName: z.string().min(1, "Nome do cliente é obrigatório"),
+  vehiclePlate: z.string().min(1, "Placa do veículo é obrigatória"),
+  vehicleModel: z.string().min(1, "Modelo do veículo é obrigatório"),
+  vehicleColor: z.string().min(1, "Cor do veículo é obrigatória"),
   technicianId: z.string().min(1, "Técnico é obrigatório"),
   problemDescription: z.string().min(1, "Descrição do problema é obrigatória"),
   priority: z.enum(["baixa", "normal", "alta", "urgente"]).default("normal"),

@@ -51,8 +51,8 @@ export function ClienteForm({ initialData, onSave, loading }: Props) {
   function validate(): boolean {
     const errs: Record<string, string> = {}
     if (!form.name.trim()) errs.name = "Nome é obrigatório"
-    if (!form.cpf || !isValidCPF(form.cpf)) errs.cpf = "CPF inválido"
-    if (!form.phone) errs.phone = "Telefone é obrigatório"
+    if (form.cpf && !isValidCPF(form.cpf)) errs.cpf = "CPF inválido"
+    if (form.phone && !/^\+55\d{10,11}$/.test(form.phone) && !/^\d{10,11}$/.test(form.phone.replace(/\D/g, ""))) errs.phone = "Telefone inválido"
     if (form.state && form.state.length !== 2) errs.state = "Use a sigla (2 letras)"
     setErrors(errs)
     return Object.keys(errs).length === 0
@@ -84,14 +84,14 @@ export function ClienteForm({ initialData, onSave, loading }: Props) {
           autoFocus
         />
         <Input
-          label="CPF *"
+          label="CPF"
           value={form.cpf}
           onChange={(e) => setField("cpf", e.target.value.replace(/\D/g, "").slice(0, 11))}
           error={errors.cpf}
           placeholder="Apenas números"
         />
         <Input
-          label="Telefone *"
+          label="Telefone"
           value={form.phone}
           onChange={(e) => setField("phone", e.target.value)}
           error={errors.phone}

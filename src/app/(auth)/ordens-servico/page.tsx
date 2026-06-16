@@ -14,7 +14,7 @@ type OS = {
   priority: string
   openingDate: string
   totalValue: number
-  customer: { name: string; cpf: string }
+  customer: { name: string; cpf: string | null }
   vehicle: { plate: string; model: string; brand: string | null }
   technician: { name: string }
 }

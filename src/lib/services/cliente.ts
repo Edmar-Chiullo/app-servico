@@ -6,8 +6,8 @@ import { clienteSchema } from "../validations"
 
 type ClienteCreateInput = {
   name: string
-  cpf: string
-  phone: string
+  cpf?: string
+  phone?: string
   whatsapp?: string
   email?: string
   street?: string

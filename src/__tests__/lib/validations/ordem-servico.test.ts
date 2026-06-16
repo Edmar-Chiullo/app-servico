@@ -4,8 +4,10 @@ import { ordemServicoSchema, concluirOSSchema, statusUpdateSchema } from "@/lib/
 describe("ordemServicoSchema", () => {
   it("accepts valid OS data", () => {
     const result = ordemServicoSchema.safeParse({
-      customerId: "customer-id",
-      vehicleId: "vehicle-id",
+      customerName: "João Silva",
+      vehiclePlate: "ABC1234",
+      vehicleModel: "Gol",
+      vehicleColor: "Prata",
       technicianId: "tech-id",
       problemDescription: "Barulho no motor",
       priority: "normal",
@@ -16,18 +18,44 @@ describe("ordemServicoSchema", () => {
 
   it("defaults priority to normal", () => {
     const result = ordemServicoSchema.parse({
-      customerId: "c1",
-      vehicleId: "v1",
+      customerName: "João",
+      vehiclePlate: "ABC1234",
+      vehicleModel: "Gol",
+      vehicleColor: "Prata",
       technicianId: "t1",
       problemDescription: "Problema",
     })
     expect(result.priority).toBe("normal")
   })
 
-  it("rejects missing customerId", () => {
+  it("rejects missing customerName", () => {
     const result = ordemServicoSchema.safeParse({
-      vehicleId: "v1",
+      vehiclePlate: "ABC1234",
+      vehicleModel: "Gol",
+      vehicleColor: "Prata",
       technicianId: "t1",
+      problemDescription: "Problema",
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it("rejects missing vehiclePlate", () => {
+    const result = ordemServicoSchema.safeParse({
+      customerName: "João",
+      vehicleModel: "Gol",
+      vehicleColor: "Prata",
+      technicianId: "t1",
+      problemDescription: "Problema",
+    })
+    expect(result.success).toBe(false)
+  })
+
+  it("rejects missing technicianId", () => {
+    const result = ordemServicoSchema.safeParse({
+      customerName: "João",
+      vehiclePlate: "ABC1234",
+      vehicleModel: "Gol",
+      vehicleColor: "Prata",
       problemDescription: "Problema",
     })
     expect(result.success).toBe(false)
@@ -35,8 +63,10 @@ describe("ordemServicoSchema", () => {
 
   it("rejects missing problemDescription", () => {
     const result = ordemServicoSchema.safeParse({
-      customerId: "c1",
-      vehicleId: "v1",
+      customerName: "João",
+      vehiclePlate: "ABC1234",
+      vehicleModel: "Gol",
+      vehicleColor: "Prata",
       technicianId: "t1",
     })
     expect(result.success).toBe(false)
@@ -44,8 +74,10 @@ describe("ordemServicoSchema", () => {
 
   it("rejects invalid priority", () => {
     const result = ordemServicoSchema.safeParse({
-      customerId: "c1",
-      vehicleId: "v1",
+      customerName: "João",
+      vehiclePlate: "ABC1234",
+      vehicleModel: "Gol",
+      vehicleColor: "Prata",
       technicianId: "t1",
       problemDescription: "Problema",
       priority: "inexistente",

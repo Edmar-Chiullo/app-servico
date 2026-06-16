@@ -3,10 +3,13 @@ import { AuditOperation, ServiceOrderStatus, StockMovementType } from "../enums"
 import { Prisma } from "@prisma/client"
 import { ALLOWED_STATUS_TRANSITIONS } from "../utils/constants"
 import { ordemServicoSchema, concluirOSSchema, statusUpdateSchema } from "../validations"
+import { generateSearchKey } from "../utils/searchKey"
 
 type CreateOSInput = {
-  customerId: string
-  vehicleId: string
+  customerName: string
+  vehiclePlate: string
+  vehicleModel: string
+  vehicleColor: string
   technicianId: string
   problemDescription: string
   priority?: string
@@ -87,20 +90,60 @@ export async function getOrdemById(id: string) {
 }
 
 export async function createOrdem(input: CreateOSInput) {
-  const { responsibleUserId, ...data } = input
-  ordemServicoSchema.parse(data)
+  const { responsibleUserId, customerName, vehiclePlate, vehicleModel, vehicleColor, ...rest } = input
 
-  const lastOrder = await prisma.serviceOrder.findFirst({
-    orderBy: { number: "desc" },
-    select: { number: true },
-  })
-
-  const nextNumber = (lastOrder?.number ?? 0) + 1
+  const plate = vehiclePlate.toUpperCase().replace(/[^A-Z0-9]/g, "")
 
   const ordem = await prisma.$transaction(async (tx) => {
+    let existingVehicle = await tx.vehicle.findUnique({
+      where: { plate },
+    })
+
+    let vehicleId: string
+    let customerId: string
+
+    if (existingVehicle) {
+      vehicleId = existingVehicle.id
+      customerId = existingVehicle.customerId
+    } else {
+      const searchKey = generateSearchKey(customerName, plate)
+      let customer = await tx.customer.findUnique({
+        where: { searchKey },
+      })
+      if (!customer) {
+        customer = await tx.customer.findFirst({
+          where: { name: customerName.toUpperCase() },
+        })
+      }
+      if (!customer) {
+        customer = await tx.customer.create({
+          data: { name: customerName.toUpperCase(), searchKey, cpf: null, phone: null },
+        })
+      }
+      customerId = customer.id
+
+      const newVehicle = await tx.vehicle.create({
+        data: {
+          plate,
+          model: vehicleModel.toUpperCase(),
+          color: vehicleColor.toUpperCase(),
+          customerId,
+        },
+      })
+      vehicleId = newVehicle.id
+    }
+
+    const lastOrder = await tx.serviceOrder.findFirst({
+      orderBy: { number: "desc" },
+      select: { number: true },
+    })
+    const nextNumber = (lastOrder?.number ?? 0) + 1
+
     const created = await tx.serviceOrder.create({
       data: {
-        ...data,
+        ...rest,
+        customerId,
+        vehicleId,
         number: nextNumber,
         responsibleUserId,
       },

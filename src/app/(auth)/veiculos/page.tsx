@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useQuery, keepPreviousData } from "@tanstack/react-query"
-import { Card, Table, Pagination, Input, Button, FormattedText, Loading } from "@/components/ui"
+import { Card, Table, Pagination, Input, FormattedText, Loading } from "@/components/ui"
 
 type Veiculo = {
   id: string
@@ -34,9 +34,8 @@ export default function VeiculosPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Veículos</h1>
-        <Button onClick={() => router.push("/veiculos/novo")} fullWidth>Novo Veículo</Button>
       </div>
 
       <Card>
