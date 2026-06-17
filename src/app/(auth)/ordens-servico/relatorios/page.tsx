@@ -2,8 +2,6 @@
 
 import { useState } from "react"
 import { Card, Button, Input, Select } from "@/components/ui"
-import { toast } from "react-toastify"
-
 export default function RelatoriosPage() {
   const [filters, setFilters] = useState({
     dateFrom: "",
@@ -11,12 +9,20 @@ export default function RelatoriosPage() {
     status: "",
   })
 
-  function downloadXLSX() {
+  function buildParams(): URLSearchParams {
     const params = new URLSearchParams()
     if (filters.dateFrom) params.set("dateFrom", filters.dateFrom)
     if (filters.dateTo) params.set("dateTo", filters.dateTo)
     if (filters.status) params.set("status", filters.status)
-    window.open(`/api/relatorios/xlsx?${params}`, "_blank")
+    return params
+  }
+
+  function downloadXLSX() {
+    window.open(`/api/relatorios/xlsx?${buildParams()}`, "_blank")
+  }
+
+  function downloadPDF() {
+    window.open(`/api/relatorios/pdf?${buildParams()}`, "_blank")
   }
 
   return (
@@ -55,7 +61,7 @@ export default function RelatoriosPage() {
           <Button onClick={downloadXLSX} fullWidth>
             Exportar XLSX
           </Button>
-          <Button variant="secondary" onClick={() => toast.info("Funcionalidade PDF será implementada em breve")} fullWidth>
+          <Button variant="secondary" onClick={downloadPDF} fullWidth>
             Exportar PDF
           </Button>
         </div>

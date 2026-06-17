@@ -14,6 +14,8 @@ type CreateOSInput = {
   problemDescription: string
   priority?: string
   notes?: string
+  customerWhatsapp?: string
+  vehicleBrand?: string
   responsibleUserId: string
 }
 
@@ -90,7 +92,7 @@ export async function getOrdemById(id: string) {
 }
 
 export async function createOrdem(input: CreateOSInput) {
-  const { responsibleUserId, customerName, vehiclePlate, vehicleModel, vehicleColor, ...rest } = input
+  const { responsibleUserId, customerName, vehiclePlate, vehicleModel, vehicleColor, customerWhatsapp, vehicleBrand, ...rest } = input
 
   const plate = vehiclePlate.toUpperCase().replace(/[^A-Z0-9]/g, "")
 
@@ -117,7 +119,7 @@ export async function createOrdem(input: CreateOSInput) {
       }
       if (!customer) {
         customer = await tx.customer.create({
-          data: { name: customerName.toUpperCase(), searchKey, cpf: null, phone: null },
+          data: { name: customerName.toUpperCase(), searchKey, cpf: null, phone: null, whatsapp: customerWhatsapp || null },
         })
       }
       customerId = customer.id
@@ -125,6 +127,7 @@ export async function createOrdem(input: CreateOSInput) {
       const newVehicle = await tx.vehicle.create({
         data: {
           plate,
+          brand: vehicleBrand || null,
           model: vehicleModel.toUpperCase(),
           color: vehicleColor.toUpperCase(),
           customerId,

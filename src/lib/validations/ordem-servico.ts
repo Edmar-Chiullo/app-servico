@@ -9,6 +9,8 @@ export const ordemServicoSchema = z.object({
   problemDescription: z.string().min(1, "Descrição do problema é obrigatória"),
   priority: z.enum(["baixa", "normal", "alta", "urgente"]).default("normal"),
   notes: z.string().optional().or(z.literal("")),
+  customerWhatsapp: z.string().optional().or(z.literal("")),
+  vehicleBrand: z.string().optional().or(z.literal("")),
 })
 
 export type OrdemServicoFormData = z.infer<typeof ordemServicoSchema>

@@ -46,4 +46,13 @@ export const ALLOWED_STATUS_TRANSITIONS: Record<string, string[]> = {
   CANCELLED: [],
 }
 
+export const VEHICLE_BRANDS = [
+  "Fiat", "Volkswagen", "Chevrolet", "Ford", "Honda", "Toyota",
+  "Nissan", "Renault", "Hyundai", "Jeep", "Peugeot", "Citroën",
+  "Mitsubishi", "BMW", "Mercedes-Benz", "Audi", "Kia", "Volvo",
+  "Land Rover", "Suzuki", "Chrysler", "Dodge", "Jac", "Chery",
+  "Caoa Chery", "Subaru", "Porsche", "Ram", "Iveco", "Mini",
+  "JAC Motors", "Effa", "Shineray", "Troller", "Lifan", "Hafei",
+]
+
 export const ITEMS_PER_PAGE = 10

@@ -4,7 +4,6 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useQuery, keepPreviousData } from "@tanstack/react-query"
 import { Card, Table, Pagination, Input, Badge, FormattedText, Loading } from "@/components/ui"
-import { formatCPF } from "@/lib/utils/cpf"
 import { formatPhone } from "@/lib/utils/phone"
 
 type Cliente = {
@@ -12,6 +11,7 @@ type Cliente = {
   name: string
   cpf: string | null
   phone: string | null
+  whatsapp: string | null
   email: string | null
   active: boolean
   createdAt: string
@@ -57,10 +57,9 @@ export default function ClientesPage() {
             <Table
               columns={[
                 { key: "name", header: "Nome", render: (c: Cliente) => <FormattedText>{c.name}</FormattedText> },
-                { key: "cpf", header: "CPF", render: (c: Cliente) => c.cpf ? formatCPF(c.cpf) : "-" },
-                { key: "phone", header: "Telefone", render: (c: Cliente) => c.phone ? formatPhone(c.phone) : "-" },
-                { key: "email", header: "Email", render: (c: Cliente) => c.email ? <FormattedText>{c.email}</FormattedText> : "-" },
-                { key: "vehicles", header: "Veículos", render: (c: Cliente) => c.vehicles?.length ?? 0 },
+                { key: "contato", header: "Contato", render: (c: Cliente) => formatPhone(c.whatsapp || c.phone || "") || "-" },
+                { key: "veiculo", header: "Veículo", render: (c: Cliente) => c.vehicles?.[0] ? <FormattedText>{c.vehicles[0].model}</FormattedText> : "-" },
+                { key: "placa", header: "Placa", render: (c: Cliente) => c.vehicles?.[0]?.plate || "-" },
                 {
                   key: "active",
                   header: "Status",

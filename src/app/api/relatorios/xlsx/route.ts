@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getCurrentUser } from "@/lib/permissions"
 import { getRelatorioData } from "@/lib/services/relatorio"
 import { toTitleCase } from "@/lib/utils/format"
+import { STATUS_OS } from "@/lib/utils/constants"
 import * as XLSX from "xlsx"
 
 export async function GET(req: NextRequest) {
@@ -22,10 +23,11 @@ export async function GET(req: NextRequest) {
   const rows = data.ordens.map((o) => ({
     "Nº OS": o.number,
     "Cliente": toTitleCase(o.customer?.name || ""),
-    "CPF": o.customer?.cpf || "",
-    "Veículo": `${toTitleCase(o.vehicle.brand || "")} ${toTitleCase(o.vehicle.model)} - ${o.vehicle.plate}`,
+
+    "Veículo": `${toTitleCase(o.vehicle.brand || "")} ${toTitleCase(o.vehicle.model)}`.trim(),
+    "Placa": o.vehicle.plate,
     "Técnico": toTitleCase(o.technician.name),
-    "Status": o.status,
+    "Situação": STATUS_OS[o.status as keyof typeof STATUS_OS] || o.status,
     "Abertura": o.openingDate.toLocaleDateString("pt-BR"),
     "Conclusão": o.completionDate?.toLocaleDateString("pt-BR") || "-",
     "Valor M. Obra": Number(o.laborValue),

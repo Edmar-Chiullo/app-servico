@@ -1,18 +1,21 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useCallback } from "react"
 import { Button, Input, Select, Combobox } from "@/components/ui"
 import type { ComboboxItem } from "@/components/ui/Combobox"
+import { VEHICLE_BRANDS } from "@/lib/utils/constants"
 
 type OSFormData = {
   customerName: string
   vehiclePlate: string
   vehicleModel: string
   vehicleColor: string
+  vehicleBrand: string
   technicianId: string
   problemDescription: string
   priority: string
   notes: string
+  customerWhatsapp: string
 }
 
 type Props = {
@@ -26,13 +29,23 @@ export function OSForm({ onSave, loading }: Props) {
     vehiclePlate: "",
     vehicleModel: "",
     vehicleColor: "",
+    vehicleBrand: "",
     technicianId: "",
     problemDescription: "",
     priority: "normal",
     notes: "",
+    customerWhatsapp: "",
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [selectedTechnicianLabel, setSelectedTechnicianLabel] = useState("")
+  const [selectedBrandLabel, setSelectedBrandLabel] = useState("")
+
+  const fetchBrands = useCallback(async (search: string): Promise<ComboboxItem[]> => {
+    const q = search.toLowerCase()
+    return VEHICLE_BRANDS
+      .filter((b) => b.toLowerCase().includes(q))
+      .map((b) => ({ value: b, label: b }))
+  }, [])
 
   async function fetchTechnicians(search: string): Promise<ComboboxItem[]> {
     const res = await fetch(`/api/tecnicos?search=${encodeURIComponent(search)}&pageSize=20&includeInactive=false`)
@@ -79,6 +92,18 @@ export function OSForm({ onSave, loading }: Props) {
           error={errors.vehiclePlate}
           placeholder="ABC1234"
         />
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Marca</label>
+          <Combobox
+            placeholder="Selecione a marca..."
+            value={selectedBrandLabel}
+            onSelect={(item) => {
+              setField("vehicleBrand", item.value)
+              setSelectedBrandLabel(item.label)
+            }}
+            fetchItems={fetchBrands}
+          />
+        </div>
         <Input
           label="Modelo do Veículo *"
           value={form.vehicleModel}
@@ -114,6 +139,12 @@ export function OSForm({ onSave, loading }: Props) {
             { value: "alta", label: "Alta" },
             { value: "urgente", label: "Urgente" },
           ]}
+        />
+        <Input
+          label="WhatsApp"
+          value={form.customerWhatsapp}
+          onChange={(e) => setField("customerWhatsapp", e.target.value)}
+          placeholder="+55 (11) 99999-9999"
         />
       </div>
 
