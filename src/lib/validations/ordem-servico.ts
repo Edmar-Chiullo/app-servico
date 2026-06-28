@@ -33,3 +33,23 @@ export const statusUpdateSchema = z.object({
 })
 
 export type StatusUpdateData = z.infer<typeof statusUpdateSchema>
+
+export const edicaoOSSchema = z.object({
+  customerName: z.string().min(1, "Nome do cliente é obrigatório"),
+  vehicleBrand: z.string().optional().or(z.literal("")),
+  vehicleModel: z.string().min(1, "Modelo do veículo é obrigatório"),
+  vehicleColor: z.string().min(1, "Cor do veículo é obrigatória"),
+  technicianId: z.string().min(1, "Técnico é obrigatório"),
+  problemDescription: z.string().min(1, "Descrição do problema é obrigatória"),
+  priority: z.enum(["baixa", "normal", "alta", "urgente"]).default("normal"),
+  notes: z.string().optional().or(z.literal("")),
+  customerWhatsapp: z.string().optional().or(z.literal("")),
+  laborValue: z.coerce.number().min(0).default(0),
+  products: z.array(z.object({
+    productId: z.string(),
+    quantity: z.coerce.number().int().min(1),
+    unitPrice: z.coerce.number().min(0),
+  })).default([]),
+})
+
+export type EdicaoOSFormData = z.infer<typeof edicaoOSSchema>

@@ -2,7 +2,8 @@ import { prisma } from "../prisma"
 import { AuditOperation, ServiceOrderStatus, StockMovementType } from "../enums"
 import { Prisma } from "@prisma/client"
 import { ALLOWED_STATUS_TRANSITIONS } from "../utils/constants"
-import { ordemServicoSchema, concluirOSSchema, statusUpdateSchema } from "../validations"
+import { ordemServicoSchema, concluirOSSchema, statusUpdateSchema, edicaoOSSchema } from "../validations"
+import type { EdicaoOSFormData } from "../validations"
 import { generateSearchKey } from "../utils/searchKey"
 
 type CreateOSInput = {
@@ -112,11 +113,6 @@ export async function createOrdem(input: CreateOSInput) {
       let customer = await tx.customer.findUnique({
         where: { searchKey },
       })
-      if (!customer) {
-        customer = await tx.customer.findFirst({
-          where: { name: customerName.toUpperCase() },
-        })
-      }
       if (!customer) {
         customer = await tx.customer.create({
           data: { name: customerName.toUpperCase(), searchKey, cpf: null, phone: null, whatsapp: customerWhatsapp || null },
@@ -330,4 +326,82 @@ export async function completeOrdem(
   })
 
   return result
+}
+
+export async function updateOrdem(
+  id: string,
+  input: EdicaoOSFormData,
+  userId: string,
+  userRole: string
+) {
+  edicaoOSSchema.parse(input)
+
+  const ordem = await prisma.serviceOrder.findUnique({
+    where: { id },
+    include: { vehicle: true },
+  })
+  if (!ordem) throw new Error("Ordem de serviço não encontrada")
+  if (ordem.status === "COMPLETED" || ordem.status === "CANCELLED") {
+    throw new Error("Não é possível editar uma OS concluída ou cancelada")
+  }
+
+  if (userRole === "MANAGER") {
+    const now = new Date()
+    const diffMs = now.getTime() - new Date(ordem.openingDate).getTime()
+    const tenMinutes = 10 * 60 * 1000
+    if (diffMs > tenMinutes) {
+      throw new Error("Gerente só pode editar a OS nos primeiros 10 minutos após a abertura")
+    }
+  }
+
+  const updated = await prisma.$transaction(async (tx) => {
+    await tx.vehicle.update({
+      where: { id: ordem.vehicleId },
+      data: {
+        brand: input.vehicleBrand || null,
+        model: input.vehicleModel.toUpperCase(),
+        color: input.vehicleColor.toUpperCase(),
+      },
+    })
+
+    const updatedOs = await tx.serviceOrder.update({
+      where: { id },
+      data: {
+        customerName: input.customerName.toUpperCase(),
+        technicianId: input.technicianId,
+        problemDescription: input.problemDescription,
+        priority: input.priority,
+        notes: input.notes || null,
+        laborValue: input.laborValue,
+      },
+    })
+
+    await tx.serviceOrderProduct.deleteMany({ where: { serviceOrderId: id } })
+
+    for (const item of input.products || []) {
+      await tx.serviceOrderProduct.create({
+        data: {
+          serviceOrderId: id,
+          productId: item.productId,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          totalPrice: item.quantity * item.unitPrice,
+        },
+      })
+    }
+
+    await tx.auditLog.create({
+      data: {
+        userId,
+        entityType: "ServiceOrder",
+        entityId: id,
+        operation: AuditOperation.UPDATE,
+        changes: JSON.stringify(input),
+      },
+    })
+
+    return updatedOs
+  })
+
+  return updated
 }

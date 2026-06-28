@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getCurrentUser, requireRole } from "@/lib/permissions"
-import { getOrdemById, completeOrdem } from "@/lib/services/ordem-servico"
+import { getOrdemById, completeOrdem, updateOrdem } from "@/lib/services/ordem-servico"
 import { concluirOSSchema } from "@/lib/validations/ordem-servico"
 import { UserRole } from "@/lib/enums"
 
@@ -45,4 +45,27 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
 
   return NextResponse.json({ error: "Ação inválida" }, { status: 400 })
+}
+
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const user = await getCurrentUser()
+  if (!user) return NextResponse.json({ error: "Não autenticado" }, { status: 401 })
+
+  const perm = requireRole(user, [UserRole.ADMIN, UserRole.MANAGER])
+  if (!perm.allowed) return NextResponse.json({ error: perm.error }, { status: 403 })
+
+  const { id } = await params
+  let body: any
+  try {
+    body = await req.json()
+  } catch {
+    return NextResponse.json({ error: "JSON inválido" }, { status: 400 })
+  }
+
+  try {
+    const result = await updateOrdem(id, body, user.id, user.role)
+    return NextResponse.json(result)
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 400 })
+  }
 }

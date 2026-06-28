@@ -2,12 +2,13 @@
 
 import { useEffect, useState, useRef } from "react"
 import { useRouter, useParams } from "next/navigation"
+import { useSession } from "next-auth/react"
 import { Card, Button, Badge, Loading, Input, Combobox, Modal, FormattedText, BarcodeScanner } from "@/components/ui"
 import type { OSDetailData } from "@/types"
 import type { ComboboxItem } from "@/components/ui/Combobox"
-import { STATUS_OS, STATUS_OS_COLORS, ALLOWED_STATUS_TRANSITIONS } from "@/lib/utils/constants"
+import { STATUS_OS, STATUS_OS_COLORS, ALLOWED_STATUS_TRANSITIONS, VEHICLE_BRANDS } from "@/lib/utils/constants"
 import { formatDate, formatDateTime, formatCurrency } from "@/lib/utils/format"
-import { FileDown } from "lucide-react"
+import { FileDown, Pencil } from "lucide-react"
 import { toast } from "react-toastify"
 
 type ProductItem = { productId: string; code: string; description: string; quantity: number; unitPrice: number }
@@ -26,6 +27,28 @@ export default function OSDetailPage() {
   const [concluding, setConcluding] = useState(false)
   const [showScanner, setShowScanner] = useState(false)
   const [scannerIndex, setScannerIndex] = useState(0)
+
+  const { data: session } = useSession()
+  const currentUserRole = (session?.user as any)?.role
+
+  const [showEdit, setShowEdit] = useState(false)
+  const [editForm, setEditForm] = useState({
+    customerName: "",
+    vehicleBrand: "",
+    vehicleModel: "",
+    vehicleColor: "",
+    technicianId: "",
+    problemDescription: "",
+    priority: "normal",
+    notes: "",
+    customerWhatsapp: "",
+    laborValue: "0",
+  })
+  const [editing, setEditing] = useState(false)
+  const [editTechnicianLabel, setEditTechnicianLabel] = useState("")
+  const [editBrandLabel, setEditBrandLabel] = useState("")
+  const [editProducts, setEditProducts] = useState<ProductItem[]>([])
+  const [scanningFor, setScanningFor] = useState<'complete' | 'edit'>('complete')
 
   async function loadOS() {
     setFetching(true)
@@ -181,6 +204,100 @@ export default function OSDetailPage() {
     }
   }
 
+  function openEditModal() {
+    if (!os) return
+    setEditForm({
+      customerName: os.customer?.name || "",
+      vehicleBrand: os.vehicle?.brand || "",
+      vehicleModel: os.vehicle?.model || "",
+      vehicleColor: os.vehicle?.color || "",
+      technicianId: os.technician?.id || "",
+      problemDescription: os.problemDescription || "",
+      priority: os.priority || "normal",
+      notes: os.notes || "",
+      customerWhatsapp: os.customer?.whatsapp || "",
+      laborValue: String(os.laborValue || 0),
+    })
+    setEditTechnicianLabel(os.technician?.name || "")
+    setEditBrandLabel(os.vehicle?.brand || "")
+    setEditProducts(
+      (os.serviceOrderProducts || []).map((p: any) => ({
+        productId: p.productId,
+        code: p.product?.code || "",
+        description: p.product?.description || "",
+        quantity: p.quantity,
+        unitPrice: p.unitPrice,
+      }))
+    )
+    setShowEdit(true)
+  }
+
+  function setEditField(field: string, value: string) {
+    setEditForm((prev) => ({ ...prev, [field]: value }))
+  }
+
+  async function handleEditSave() {
+    if (!editForm.customerName.trim()) { toast.error("Nome do cliente é obrigatório"); return }
+    if (!editForm.vehicleModel.trim()) { toast.error("Modelo é obrigatório"); return }
+    if (!editForm.vehicleColor.trim()) { toast.error("Cor é obrigatória"); return }
+    if (!editForm.technicianId) { toast.error("Técnico é obrigatório"); return }
+    if (!editForm.problemDescription.trim()) { toast.error("Descrição do problema é obrigatória"); return }
+
+    setEditing(true)
+    try {
+      const res = await fetch(`/api/ordens-servico/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...editForm,
+          laborValue: Number(editForm.laborValue),
+          products: editProducts.map((p) => ({
+            productId: p.productId,
+            quantity: p.quantity,
+            unitPrice: p.unitPrice,
+          })),
+        }),
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        throw new Error(err.error || "Erro ao editar OS")
+      }
+      toast.success("OS atualizada com sucesso!")
+      setShowEdit(false)
+      loadOS()
+    } catch (err: any) {
+      toast.error(err.message)
+    } finally {
+      setEditing(false)
+    }
+  }
+
+  function addEditProduct() {
+    setEditProducts([...editProducts, { productId: "", code: "", description: "", quantity: 1, unitPrice: 0 }])
+  }
+
+  function handleEditProductSelect(index: number, item: ComboboxItem) {
+    const updated = [...editProducts]
+    updated[index] = {
+      ...updated[index],
+      productId: item.value,
+      code: item.code || "",
+      description: item.description || item.label,
+      unitPrice: item.salePrice || 0,
+    }
+    setEditProducts(updated)
+  }
+
+  function updateEditProduct(index: number, field: keyof ProductItem, value: any) {
+    const updated = [...editProducts]
+    updated[index] = { ...updated[index], [field]: value }
+    setEditProducts(updated)
+  }
+
+  function removeEditProduct(index: number) {
+    setEditProducts(editProducts.filter((_, i) => i !== index))
+  }
+
   if (loading) return <Loading />
   if (!os) return <p className="text-red-500">Ordem não encontrada</p>
 
@@ -192,6 +309,16 @@ export default function OSDetailPage() {
       <div className="flex items-start justify-between gap-2">
         <h1 className="text-2xl font-bold break-words">OS #{os.number}</h1>
         <div className="flex items-center gap-2 shrink-0">
+          {(currentUserRole === "ADMIN" || currentUserRole === "MANAGER") && (
+            <button
+              onClick={openEditModal}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-blue-50 text-blue-700 rounded-md hover:bg-blue-100 transition-colors"
+              title="Editar OS"
+            >
+              <Pencil size={16} />
+              <span className="hidden sm:inline">Editar</span>
+            </button>
+          )}
           <button
             onClick={() => window.open(`/api/ordens-servico/${id}/pdf`, "_blank")}
             className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
@@ -332,6 +459,74 @@ export default function OSDetailPage() {
 
           <Button onClick={handleConclude} loading={concluding} className="w-full">
             Confirmar Conclusão
+          </Button>
+        </div>
+      </Modal>
+
+      <Modal open={showEdit} onClose={() => setShowEdit(false)} title={`Editar OS #${os.number}`} size="lg">
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input label="Nome do Cliente *" value={editForm.customerName} onChange={(e) => setEditField("customerName", e.target.value)} />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Marca</label>
+              <Combobox
+                placeholder="Selecione a marca..."
+                value={editBrandLabel}
+                onSelect={(item) => { setEditField("vehicleBrand", item.value); setEditBrandLabel(item.label) }}
+                fetchItems={async (s: string) => {
+                  const q = s.toLowerCase()
+                  return VEHICLE_BRANDS
+                    .filter((b) => b.toLowerCase().includes(q))
+                    .map((b) => ({ value: b, label: b }))
+                }}
+              />
+            </div>
+            <Input label="Modelo do Veículo *" value={editForm.vehicleModel} onChange={(e) => setEditField("vehicleModel", e.target.value)} />
+            <Input label="Cor do Veículo *" value={editForm.vehicleColor} onChange={(e) => setEditField("vehicleColor", e.target.value)} />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Técnico *</label>
+              <Combobox
+                placeholder="Buscar técnico..."
+                value={editTechnicianLabel}
+                onSelect={(item) => { setEditField("technicianId", item.value); setEditTechnicianLabel(item.label) }}
+                fetchItems={async (s: string) => {
+                  const res = await fetch(`/api/tecnicos?search=${encodeURIComponent(s)}&pageSize=20&includeInactive=false`)
+                  const json = await res.json()
+                  return json.data.map((t: any) => ({ value: t.id, label: t.name }))
+                }}
+              />
+            </div>
+          </div>
+          <Input label="Descrição do Problema *" value={editForm.problemDescription} onChange={(e) => setEditField("problemDescription", e.target.value)} as="textarea" className="min-h-[80px]" />
+          <Input label="Valor da Mão de Obra" type="number" step="0.01" value={editForm.laborValue} onChange={(e) => setEditField("laborValue", e.target.value)} />
+          <Input label="Observações" value={editForm.notes} onChange={(e) => setEditField("notes", e.target.value)} as="textarea" className="min-h-[60px]" />
+
+          <div>
+            <div className="flex items-start justify-between gap-2 mb-2">
+              <h4 className="font-medium text-sm">Produtos Utilizados</h4>
+              <Button type="button" size="sm" onClick={addEditProduct} className="shrink-0">+ Adicionar Produto</Button>
+            </div>
+            {editProducts.map((p, i) => (
+              <div key={i} className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-end mb-3">
+                <Combobox
+                  placeholder="Buscar produto..."
+                  value={p.description ? `[${p.code}] ${p.description}` : ""}
+                  fetchItems={fetchProducts}
+                  onSelect={(item) => handleEditProductSelect(i, item)}
+                  showCamera
+                  onCameraClick={() => { setScanningFor("edit"); setScannerIndex(i); setShowScanner(true) }}
+                />
+                <div className="flex gap-2 items-end">
+                  <Input type="number" min="1" value={p.quantity} onChange={(e) => updateEditProduct(i, "quantity", Number(e.target.value))} className="w-20" placeholder="Qtd" />
+                  <Input type="number" step="0.01" value={p.unitPrice} onChange={(e) => updateEditProduct(i, "unitPrice", Number(e.target.value))} className="w-24" placeholder="R$" />
+                  <button type="button" onClick={() => removeEditProduct(i)} className="text-red-500 text-sm whitespace-nowrap mb-1">Remover</button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <Button onClick={handleEditSave} loading={editing} className="w-full">
+            Salvar Alterações
           </Button>
         </div>
       </Modal>

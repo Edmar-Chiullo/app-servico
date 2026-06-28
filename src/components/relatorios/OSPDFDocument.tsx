@@ -1,4 +1,4 @@
-import { Document, Page, View, Text, StyleSheet } from "@react-pdf/renderer"
+import { Document, Page, View, Text, Image, StyleSheet } from "@react-pdf/renderer"
 import { toTitleCase } from "@/lib/utils/format"
 
 const styles = StyleSheet.create({
@@ -227,14 +227,19 @@ export function OSPDFDocument({ os, company }: Props) {
     <Document>
       <Page size="A4" style={styles.page}>
         <View style={styles.header}>
-          <View>
-            <Text style={styles.companyName}>{company?.name || "App Serviço"}</Text>
-            {company?.cnpj && <Text style={styles.companyInfo}>CNPJ: {company.cnpj}</Text>}
-            {company?.phone && <Text style={styles.companyInfo}>Tel: {company.phone}</Text>}
-            {company?.email && <Text style={styles.companyInfo}>Email: {company.email}</Text>
-            && company?.street && <Text style={styles.companyInfo}>
-              {company.street}, {company.number} - {company.neighborhood}, {company.city}/{company.state}
-            </Text>}
+          <View style={{ flexDirection: "row", gap: 12, alignItems: "center", flex: 1 }}>
+            {company?.logo && (
+              <Image src={company.logo} style={{ width: 50, height: 50, objectFit: "contain" }} />
+            )}
+            <View style={{ flex: 1 }}>
+              <Text style={styles.companyName}>{company?.name || "App Serviço"}</Text>
+              {company?.cnpj && <Text style={styles.companyInfo}>CNPJ: {company.cnpj}</Text>}
+              {company?.phone && <Text style={styles.companyInfo}>Tel: {company.phone}</Text>}
+              {company?.email && <Text style={styles.companyInfo}>Email: {company.email}</Text>
+              && company?.street && <Text style={styles.companyInfo}>
+                {company.street}, {company.number} - {company.neighborhood}, {company.city}/{company.state}
+              </Text>}
+            </View>
           </View>
           <Text style={styles.statusBadge}>{getStatusLabel(os.status)}</Text>
         </View>
