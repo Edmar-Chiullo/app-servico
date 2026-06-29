@@ -341,7 +341,7 @@ export async function updateOrdem(
     include: { vehicle: true },
   })
   if (!ordem) throw new Error("Ordem de serviço não encontrada")
-  if (ordem.status === "COMPLETED" || ordem.status === "CANCELLED") {
+  if (userRole !== "ADMIN" && (ordem.status === "COMPLETED" || ordem.status === "CANCELLED")) {
     throw new Error("Não é possível editar uma OS concluída ou cancelada")
   }
 

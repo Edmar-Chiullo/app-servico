@@ -309,7 +309,7 @@ export default function OSDetailPage() {
       <div className="flex items-start justify-between gap-2">
         <h1 className="text-2xl font-bold break-words">OS #{os.number}</h1>
         <div className="flex items-center gap-2 shrink-0">
-          {(currentUserRole === "ADMIN" || currentUserRole === "MANAGER") && (
+          {(currentUserRole === "ADMIN" || (currentUserRole === "MANAGER" && isEditable)) && (
             <button
               onClick={openEditModal}
               className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-blue-50 text-blue-700 rounded-md hover:bg-blue-100 transition-colors"
