@@ -1,5 +1,6 @@
 import { Document, Page, View, Text, Image, StyleSheet } from "@react-pdf/renderer"
 import { toTitleCase } from "@/lib/utils/format"
+import { formatDateBR } from "@/lib/utils/date"
 
 const styles = StyleSheet.create({
   page: {
@@ -193,14 +194,12 @@ function formatCurrency(value: number | string | null | undefined): string {
 
 function formatDate(date: Date | string | null | undefined): string {
   if (!date) return "-"
-  const d = typeof date === "string" ? new Date(date) : date
-  return d.toLocaleDateString("pt-BR")
+  return formatDateBR(date, "date")
 }
 
 function formatDateTime(date: Date | string | null | undefined): string {
   if (!date) return "-"
-  const d = typeof date === "string" ? new Date(date) : date
-  return d.toLocaleString("pt-BR")
+  return formatDateBR(date, "datetime")
 }
 
 function getStatusLabel(status: string): string {
@@ -349,7 +348,7 @@ export function OSPDFDocument({ os, company }: Props) {
         <View style={{ flexDirection: "row", justifyContent: "center", marginTop: 20 }}>
           <Text style={styles.signature}>
             Assinatura do Cliente{'\n'}{'\n'}{'\n'}
-            {company?.name && `${company.name} - `}Emitido em: {new Date().toLocaleDateString("pt-BR")}
+            {company?.name && `${company.name} - `}Emitido em: {formatDateBR(new Date(), "date")}
           </Text>
         </View>
 

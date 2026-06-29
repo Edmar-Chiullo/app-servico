@@ -1,6 +1,7 @@
 import { Document, Page, View, Text, StyleSheet } from "@react-pdf/renderer"
 import { STATUS_OS } from "@/lib/utils/constants"
 import { toTitleCase, formatCurrency } from "@/lib/utils/format"
+import { formatDateBR } from "@/lib/utils/date"
 
 const styles = StyleSheet.create({
   page: {
@@ -103,8 +104,7 @@ const styles = StyleSheet.create({
 
 function formatDate(d: Date | string | null | undefined): string {
   if (!d) return "-"
-  const date = typeof d === "string" ? new Date(d) : d
-  return date.toLocaleDateString("pt-BR")
+  return formatDateBR(d, "date")
 }
 
 type Props = {

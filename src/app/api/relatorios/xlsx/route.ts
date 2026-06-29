@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getCurrentUser } from "@/lib/permissions"
 import { getRelatorioData } from "@/lib/services/relatorio"
 import { toTitleCase } from "@/lib/utils/format"
+import { formatDateBR } from "@/lib/utils/date"
 import { STATUS_OS } from "@/lib/utils/constants"
 import * as XLSX from "xlsx"
 
@@ -28,8 +29,8 @@ export async function GET(req: NextRequest) {
     "Placa": o.vehicle.plate,
     "Técnico": toTitleCase(o.technician.name),
     "Situação": STATUS_OS[o.status as keyof typeof STATUS_OS] || o.status,
-    "Abertura": o.openingDate.toLocaleDateString("pt-BR"),
-    "Conclusão": o.completionDate?.toLocaleDateString("pt-BR") || "-",
+    "Abertura": formatDateBR(o.openingDate, "date"),
+    "Conclusão": o.completionDate ? formatDateBR(o.completionDate, "date") : "-",
     "Valor M. Obra": Number(o.laborValue),
     "Valor Materiais": Number(o.materialsValue),
     "Valor Total": Number(o.totalValue),

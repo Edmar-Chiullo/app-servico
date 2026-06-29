@@ -31,3 +31,14 @@ export function getBrazilMonthRange() {
   const startOfMonth = new Date(Date.UTC(year, month - 1, 1, BRAZIL_OFFSET_HOURS, 0, 0, 0))
   return { startOfMonth }
 }
+
+export function formatDateBR(date: Date | string, style: "date" | "datetime" = "date"): string {
+  const d = typeof date === "string" ? new Date(date) : date
+  const fmt = new Intl.DateTimeFormat("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    ...(style === "datetime"
+      ? { dateStyle: "short" as const, timeStyle: "short" as const }
+      : { dateStyle: "short" as const }),
+  })
+  return fmt.format(d)
+}

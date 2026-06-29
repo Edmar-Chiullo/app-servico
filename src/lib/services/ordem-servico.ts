@@ -364,6 +364,9 @@ export async function updateOrdem(
       },
     })
 
+    const materialsValue = (input.products || []).reduce((sum, p) => sum + p.quantity * p.unitPrice, 0)
+    const totalValue = Number(input.laborValue || 0) + materialsValue
+
     const updatedOs = await tx.serviceOrder.update({
       where: { id },
       data: {
@@ -373,6 +376,8 @@ export async function updateOrdem(
         priority: input.priority,
         notes: input.notes || null,
         laborValue: input.laborValue,
+        materialsValue,
+        totalValue,
       },
     })
 
@@ -397,6 +402,22 @@ export async function updateOrdem(
         entityId: id,
         operation: AuditOperation.UPDATE,
         changes: JSON.stringify(input),
+      },
+    })
+
+    if (ordem.status === "COMPLETED") {
+      await tx.financialEntry.updateMany({
+        where: { serviceOrderId: id },
+        data: { value: totalValue },
+      })
+    }
+
+    await tx.statusHistory.create({
+      data: {
+        serviceOrderId: id,
+        fromStatus: ordem.status,
+        toStatus: ordem.status,
+        changedByUserId: userId,
       },
     })
 

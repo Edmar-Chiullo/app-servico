@@ -6,14 +6,14 @@ export function formatCurrency(value: number | string | { toString(): string }):
   }).format(num)
 }
 
+import { formatDateBR } from "./date"
+
 export function formatDate(date: Date | string): string {
-  const d = typeof date === "string" ? new Date(date) : date
-  return d.toLocaleDateString("pt-BR")
+  return formatDateBR(date, "date")
 }
 
 export function formatDateTime(date: Date | string): string {
-  const d = typeof date === "string" ? new Date(date) : date
-  return d.toLocaleString("pt-BR")
+  return formatDateBR(date, "datetime")
 }
 
 export function formatNumber(value: number): string {

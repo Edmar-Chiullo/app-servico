@@ -1,5 +1,6 @@
 import { Document, Page, View, Text, StyleSheet } from "@react-pdf/renderer"
 import { toTitleCase } from "@/lib/utils/format"
+import { formatDateBR } from "@/lib/utils/date"
 
 const styles = StyleSheet.create({
   page: {
@@ -112,7 +113,7 @@ export function ProdutosLowStockPDFDocument({ products, company }: Props) {
           Produtos com estoque igual ou abaixo do mínimo
         </Text>
         <Text style={styles.summary}>
-          {products.length} produto(s) encontrado(s) em {new Date().toLocaleDateString("pt-BR")}
+          {products.length} produto(s) encontrado(s) em {formatDateBR(new Date(), "date")}
         </Text>
 
         <View style={styles.table}>
